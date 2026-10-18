@@ -1,0 +1,31 @@
+{
+  "clipboard_scope": "no_clipboard_writes",
+  "station_error": 0,
+  "original_clipboard_sequence_unchanged": true,
+  "cases": [
+    {"name": "chinese_language_submenu_has_two_options", "passed": true, "detail": 0, "skipped": false},
+    {"name": "chinese_radio_selected_without_english", "passed": true, "detail": 0, "skipped": false},
+    {"name": "chinese_menu_heading_is_localized", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_language_submenu_has_two_options", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_radio_selected_without_chinese", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_menu_heading_is_localized", "passed": true, "detail": 0, "skipped": false},
+    {"name": "paused_english_menu_offers_resume", "passed": true, "detail": 0, "skipped": false},
+    {"name": "chinese_bold_caption_fits_at_96dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_bold_caption_fits_at_96dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "languages_keep_same_panel_size_at_96dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "chinese_bold_caption_fits_at_144dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_bold_caption_fits_at_144dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "languages_keep_same_panel_size_at_144dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "chinese_bold_caption_fits_at_192dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_bold_caption_fits_at_192dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "languages_keep_same_panel_size_at_192dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "temporary_language_settings_will_not_overwrite_existing_file", "passed": true, "detail": 0, "skipped": false},
+    {"name": "new_user_defaults_to_chinese", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_menu_command_switches_active_language", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_selection_survives_application_restart", "passed": true, "detail": 0, "skipped": false},
+    {"name": "switching_back_to_chinese_is_persisted", "passed": true, "detail": 0, "skipped": false}
+  ],
+  "passed": 21,
+  "failed": 0,
+  "skipped": 0
+}

@@ -1,0 +1,11 @@
+/CopyConfirm.exe
+/CopyConfirm.ini
+/work/
+/build/
+/.build/
+*.o
+*.obj
+*.pdb
+*.log
+.vs/
+.vscode/

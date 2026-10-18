@@ -1,0 +1,11 @@
+{
+  "clipboard_scope": "read_only_current_clipboard",
+  "station_error": 0,
+  "original_clipboard_sequence_unchanged": true,
+  "cases": [
+    {"name": "current_clipboard_has_no_owned_data_to_verify", "passed": false, "detail": 0, "skipped": true}
+  ],
+  "passed": 0,
+  "failed": 0,
+  "skipped": 1
+}

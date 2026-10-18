@@ -1,0 +1,15 @@
+{
+  "clipboard_scope": "no_clipboard_writes",
+  "station_error": 0,
+  "original_clipboard_sequence_unchanged": true,
+  "cases": [
+    {"name": "native_hidden_window_created", "passed": true, "detail": 0, "skipped": false},
+    {"name": "clipboard_notifications_registered", "passed": true, "detail": 0, "skipped": false},
+    {"name": "global_keyboard_hook_installed_on_dedicated_thread", "passed": true, "detail": 0, "skipped": false},
+    {"name": "native_chinese_toast_rendered_at_150_percent_dpi", "passed": true, "detail": 0, "skipped": false},
+    {"name": "overlay_has_click_through_and_no_activate_styles", "passed": true, "detail": 0, "skipped": false}
+  ],
+  "passed": 5,
+  "failed": 0,
+  "skipped": 0
+}

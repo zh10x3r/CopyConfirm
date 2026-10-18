@@ -1,0 +1,29 @@
+#pragma code_page(65001)
+#include <windows.h>
+101 ICON "CopyConfirm.ico"
+1 RT_MANIFEST "CopyConfirm.manifest"
+1 VERSIONINFO
+FILEVERSION 1,1,0,0
+PRODUCTVERSION 1,1,0,0
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0x0L
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "080404b0"
+    BEGIN
+      VALUE "FileDescription", "复制确认\0"
+      VALUE "FileVersion", "1.1.0\0"
+      VALUE "InternalName", "CopyConfirm\0"
+      VALUE "OriginalFilename", "CopyConfirm.exe\0"
+      VALUE "ProductName", "复制确认\0"
+      VALUE "ProductVersion", "1.1.0\0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0804, 1200
+  END
+END
