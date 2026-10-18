@@ -1,0 +1,33 @@
+{
+  "clipboard_scope": "no_clipboard_writes",
+  "station_error": 0,
+  "original_clipboard_sequence_unchanged": true,
+  "cases": [
+    {"name": "unique_non_startup_test_registry_key_created", "passed": true, "detail": 0, "skipped": false},
+    {"name": "missing_registration_is_unchecked", "passed": true, "detail": 0, "skipped": false},
+    {"name": "enable_accepts_unicode_and_spaces", "passed": true, "detail": 0, "skipped": false},
+    {"name": "startup_command_is_quoted_reg_sz", "passed": true, "detail": 0, "skipped": false},
+    {"name": "registration_is_read_back_from_windows", "passed": true, "detail": 0, "skipped": false},
+    {"name": "different_executable_is_not_shown_as_enabled", "passed": true, "detail": 0, "skipped": false},
+    {"name": "chinese_startup_menu_is_checked", "passed": true, "detail": 0, "skipped": false},
+    {"name": "chinese_startup_label_is_correct", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_startup_menu_is_checked", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_startup_label_is_correct", "passed": true, "detail": 0, "skipped": false},
+    {"name": "overlong_path_is_rejected_without_changing_setting", "passed": true, "detail": 0, "skipped": false},
+    {"name": "embedded_quote_is_rejected_without_changing_setting", "passed": true, "detail": 0, "skipped": false},
+    {"name": "disable_removes_startup_registration", "passed": true, "detail": 0, "skipped": false},
+    {"name": "disable_preserves_unrelated_registry_values", "passed": true, "detail": 0, "skipped": false},
+    {"name": "disabling_an_absent_registration_is_safe", "passed": true, "detail": 0, "skipped": false},
+    {"name": "disabled_registration_has_no_checkmark", "passed": true, "detail": 0, "skipped": false},
+    {"name": "unexpected_registry_type_is_reported", "passed": true, "detail": 0, "skipped": false},
+    {"name": "unreadable_setting_is_disabled_in_menu", "passed": true, "detail": 0, "skipped": false},
+    {"name": "startup_menu_command_test_window_created", "passed": true, "detail": 0, "skipped": false},
+    {"name": "startup_menu_command_enables_current_executable", "passed": true, "detail": 0, "skipped": false},
+    {"name": "startup_checkmark_survives_application_restart", "passed": true, "detail": 0, "skipped": false},
+    {"name": "startup_menu_command_unchecks_and_unregisters", "passed": true, "detail": 0, "skipped": false},
+    {"name": "temporary_registry_fixture_removed", "passed": true, "detail": 0, "skipped": false}
+  ],
+  "passed": 23,
+  "failed": 0,
+  "skipped": 0
+}

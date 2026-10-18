@@ -19,7 +19,7 @@ try {
         '-municode' '-mwindows' '-static' '-static-libgcc' '-static-libstdc++' '-s' `
         '-finput-charset=UTF-8' '-fexec-charset=UTF-8' `
         'CopyConfirm.cpp' (Join-Path $taskBuildPath 'CopyConfirm.res.o') `
-        '-luser32' '-lgdi32' '-lshell32' '-lgdiplus' '-lole32' `
+        '-luser32' '-lgdi32' '-lshell32' '-lgdiplus' '-lole32' '-ladvapi32' `
         '-o' $taskOutput
     if ($LASTEXITCODE -ne 0) { throw 'C++ compilation failed.' }
     Get-Item -LiteralPath $taskOutput | Select-Object FullName,Length

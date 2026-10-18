@@ -5,10 +5,10 @@
   "cases": [
     {"name": "chinese_language_submenu_has_two_options", "passed": true, "detail": 0, "skipped": false},
     {"name": "chinese_radio_selected_without_english", "passed": true, "detail": 0, "skipped": false},
-    {"name": "chinese_menu_heading_is_localized", "passed": true, "detail": 0, "skipped": false},
+    {"name": "chinese_menu_heading_is_lowercase_language", "passed": true, "detail": 0, "skipped": false},
     {"name": "english_language_submenu_has_two_options", "passed": true, "detail": 0, "skipped": false},
     {"name": "english_radio_selected_without_chinese", "passed": true, "detail": 0, "skipped": false},
-    {"name": "english_menu_heading_is_localized", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_menu_heading_is_lowercase_language", "passed": true, "detail": 0, "skipped": false},
     {"name": "paused_english_menu_offers_resume", "passed": true, "detail": 0, "skipped": false},
     {"name": "chinese_bold_caption_fits_at_96dpi", "passed": true, "detail": 0, "skipped": false},
     {"name": "english_bold_caption_fits_at_96dpi", "passed": true, "detail": 0, "skipped": false},

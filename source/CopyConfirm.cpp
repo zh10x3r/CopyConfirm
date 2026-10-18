@@ -41,10 +41,13 @@ constexpr UINT PollTimer = 1;
 constexpr UINT ToastTimer = 2;
 constexpr UINT PauseCommand = 101;
 constexpr UINT ExitCommand = 102;
+constexpr UINT AutoStartCommand = 103;
 constexpr UINT ChineseCommand = 201;
 constexpr UINT EnglishCommand = 202;
 constexpr DWORD ProbeTimeoutMs = 1250;
 constexpr ULONGLONG ProbeMagic = 0x43504F5344505231ULL;
+constexpr wchar_t StartupRunKey[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+constexpr wchar_t StartupValueName[] = L"CopyConfirm";
 std::atomic<std::uint64_t> latestAttempt{0};
 std::atomic<bool> paused{false};
 HWND mainWindow{};
@@ -93,7 +96,48 @@ bool SaveLanguage(const std::wstring& path, Language language) {
         language == Language::English ? L"en" : L"zh-CN", path.c_str());
 }
 
-HMENU BuildTrayMenu(Language language, bool isPaused) {
+struct StartupState {
+    bool enabled{};
+    LSTATUS error{ERROR_SUCCESS};
+};
+
+StartupState ReadStartup(const std::wstring& executable, const std::wstring& keyPath = StartupRunKey) {
+    wchar_t command[261]{};
+    DWORD bytes = sizeof(command);
+    const LSTATUS status = RegGetValueW(HKEY_CURRENT_USER, keyPath.c_str(), StartupValueName,
+        RRF_RT_REG_SZ, nullptr, command, &bytes);
+    if (status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND) return {};
+    if (status != ERROR_SUCCESS) return {false, status};
+    const std::wstring expected = L"\"" + executable + L"\"";
+    return {!executable.empty() && _wcsicmp(command, expected.c_str()) == 0, ERROR_SUCCESS};
+}
+
+LSTATUS SetStartup(bool enabled, const std::wstring& executable, const std::wstring& keyPath = StartupRunKey) {
+    const std::wstring command = L"\"" + executable + L"\"";
+    if (enabled && (executable.empty() || executable.find(L'"') != std::wstring::npos ||
+        executable.find(L'\0') != std::wstring::npos)) return ERROR_INVALID_PARAMETER;
+    // Windows Run entries are limited to 260 characters, including path quotes.
+    if (enabled && command.size() > 260) return ERROR_FILENAME_EXCED_RANGE;
+    HKEY key{};
+    LSTATUS status = enabled ?
+        RegCreateKeyExW(HKEY_CURRENT_USER, keyPath.c_str(), 0, nullptr, REG_OPTION_NON_VOLATILE,
+            KEY_SET_VALUE, nullptr, &key, nullptr) :
+        RegOpenKeyExW(HKEY_CURRENT_USER, keyPath.c_str(), 0, KEY_SET_VALUE, &key);
+    if (!enabled && (status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND)) return ERROR_SUCCESS;
+    if (status != ERROR_SUCCESS) return status;
+    if (enabled) {
+        status = RegSetValueExW(key, StartupValueName, 0, REG_SZ,
+            reinterpret_cast<const BYTE*>(command.c_str()),
+            static_cast<DWORD>((command.size() + 1) * sizeof(wchar_t)));
+    } else {
+        status = RegDeleteValueW(key, StartupValueName);
+        if (status == ERROR_FILE_NOT_FOUND) status = ERROR_SUCCESS;
+    }
+    RegCloseKey(key);
+    return status;
+}
+
+HMENU BuildTrayMenu(Language language, bool isPaused, StartupState startup = {}) {
     const auto& text = Text(language);
     HMENU menu = CreatePopupMenu();
     if (!menu) return nullptr;
@@ -105,10 +149,13 @@ HMENU BuildTrayMenu(Language language, bool isPaused) {
             language == Language::English ? EnglishCommand : ChineseCommand, MF_BYCOMMAND) &&
         AppendMenuW(menu, MF_STRING, PauseCommand, isPaused ? text.resume : text.pause);
     if (!success) { DestroyMenu(languages); DestroyMenu(menu); return nullptr; }
-    if (!AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(languages), text.language)) {
+    if (!AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(languages), L"language")) {
         DestroyMenu(languages); DestroyMenu(menu); return nullptr;
     }
-    if (!AppendMenuW(menu, MF_SEPARATOR, 0, nullptr) ||
+    const UINT startupFlags = MF_STRING | (startup.enabled ? MF_CHECKED : MF_UNCHECKED) |
+        (startup.error == ERROR_SUCCESS ? MF_ENABLED : MF_GRAYED);
+    if (!AppendMenuW(menu, startupFlags, AutoStartCommand, text.autoStart) ||
+        !AppendMenuW(menu, MF_SEPARATOR, 0, nullptr) ||
         !AppendMenuW(menu, MF_STRING, ExitCommand, text.exit)) {
         DestroyMenu(menu); return nullptr;
     }
@@ -524,9 +571,11 @@ private:
 
 class App {
 public:
-    explicit App(std::wstring settingsPath = LanguageConfigPath())
-        : settingsPath_(std::move(settingsPath)), language_(LoadLanguage(settingsPath_)) {}
+    explicit App(std::wstring settingsPath = LanguageConfigPath(), std::wstring startupKey = StartupRunKey)
+        : settingsPath_(std::move(settingsPath)), language_(LoadLanguage(settingsPath_)),
+          startupKey_(std::move(startupKey)) {}
     Language CurrentLanguage() const { return language_; }
+    StartupState CurrentStartup() const { return ReadStartup(ExecutablePath(), startupKey_); }
     void Attach(HWND window) { window_ = window; }
     bool Initialize(HWND window) {
         window_ = window;
@@ -591,6 +640,24 @@ public:
             return 0;
         case WM_COMMAND:
             if (LOWORD(wParam) == ExitCommand) DestroyWindow(window_);
+            if (LOWORD(wParam) == AutoStartCommand) {
+                const auto state = CurrentStartup();
+                LSTATUS error = state.error;
+                if (error == ERROR_SUCCESS) error = SetStartup(!state.enabled, ExecutablePath(), startupKey_);
+                if (error == ERROR_SUCCESS) {
+                    const auto updated = CurrentStartup();
+                    error = updated.error;
+                    if (error == ERROR_SUCCESS && updated.enabled == state.enabled) error = ERROR_WRITE_FAULT;
+                }
+                if (error != ERROR_SUCCESS) {
+                    wchar_t detail[512]{};
+                    FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                        nullptr, static_cast<DWORD>(error), 0, detail, _countof(detail), nullptr);
+                    const auto& text = Text(language_);
+                    const std::wstring message = std::wstring(text.autoStartError) + L"\n\n" + detail;
+                    MessageBoxW(window_, message.c_str(), AppName, MB_OK | MB_ICONERROR);
+                }
+            }
             if (LOWORD(wParam) == PauseCommand) {
                 paused.store(!paused.load());
                 latestAttempt.fetch_add(1);
@@ -645,7 +712,7 @@ private:
         Shell_NotifyIconW(NIM_MODIFY, &icon);
     }
     void TrayMenu() {
-        HMENU menu = BuildTrayMenu(language_, paused.load());
+        HMENU menu = BuildTrayMenu(language_, paused.load(), CurrentStartup());
         if (!menu) return;
         POINT point{}; GetCursorPos(&point);
         SetForegroundWindow(window_);
@@ -701,6 +768,7 @@ private:
     bool visible_{}, listening_{};
     std::wstring settingsPath_;
     Language language_{Language::Chinese};
+    std::wstring startupKey_;
 };
 
 LRESULT CALLBACK MainWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -720,6 +788,7 @@ int RunSelfTests(const wchar_t* reportPath);
 int RunSmokeTest(const wchar_t* reportPath);
 int RunReadOnlyProbeTest(const wchar_t* reportPath);
 int RunLanguageTests(const wchar_t* reportPath);
+int RunStartupTests(const wchar_t* reportPath);
 }
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
@@ -745,6 +814,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     }
     if (args.size() == 3 && args[1] == L"--language-test") {
         const int result = RunLanguageTests(args[2].c_str());
+        Gdiplus::GdiplusShutdown(graphicsToken);
+        return result;
+    }
+    if (args.size() == 3 && args[1] == L"--startup-test") {
+        const int result = RunStartupTests(args[2].c_str());
         Gdiplus::GdiplusShutdown(graphicsToken);
         return result;
     }

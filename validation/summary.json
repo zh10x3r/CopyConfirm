@@ -1,18 +1,19 @@
 {
   "name": "HaveICopied / CopyConfirm",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "date": "2026-10-19",
   "platform": "Windows 10/11 x64",
   "repository": "https://github.com/zh10x3r/CopyConfirm",
-  "binary_bytes": 375296,
-  "sha256": "bec22c2d3240c19ed660446f124709b258c8d34d6427f526ee01b3de57aca3b5",
-  "previous_binary_sha256": "69355653b2dff33917732f06b1cf8ef1d8a4797570e2661a8d7d5ecc8a180d20",
-  "automatic_checks_passed": 77,
+  "binary_bytes": 384512,
+  "sha256": "9aa455cd60d10953ee0ec43403be1e0ccfbe3c079fe983c518ab7ec888d202ed",
+  "previous_binary_sha256": "bec22c2d3240c19ed660446f124709b258c8d34d6427f526ee01b3de57aca3b5",
+  "automatic_checks_passed": 100,
   "automatic_checks_failed": 0,
   "groups_or_checks_skipped": 0,
   "actual_application_copy_paste_integration": "native Windows edit-control copy/read/paste verified in an isolated noninteractive window station; individual third-party applications not exhaustively tested",
   "visible_user_clipboard_modified_by_tests": false,
   "runtime_dlls": [
+    "ADVAPI32.dll",
     "GDI32.dll",
     "gdiplus.dll",
     "KERNEL32.dll",
@@ -29,13 +30,14 @@
     "SHELL32.dll",
     "USER32.dll"
   ],
-  "latest_change": "Lowered both language overlays to align their visible bottom edge with the HP Caps Lock panel in the supplied screenshot.",
+  "latest_change": "Added an opt-in current-user Start with Windows checkbox; the language submenu heading is always lowercase language.",
   "release_validation": {
     "clipboard_and_detector_checks_passed": 50,
     "native_window_and_render_checks_passed": 5,
     "language_menu_persistence_and_dpi_checks_passed": 21,
     "chinese_and_english_previews_visually_checked": true,
-    "current_desktop_read_only_probe_checks_passed": 1
+    "current_desktop_read_only_probe_checks_passed": 1,
+    "startup_registration_and_native_menu_checks_passed": 23
   },
   "fonts": {
     "zh-CN": {
@@ -55,5 +57,13 @@
     "moved_down_at_192_dpi_pixels": 86,
     "reference_screenshot_calibrated": true,
     "live_hp_overlay_alignment_visually_verified": false
-  }
+  },
+  "startup": {
+    "enabled_by_default": false,
+    "scope": "current_user",
+    "registration": "HKCU Run CopyConfirm value, quoted executable path",
+    "test_scope": "unique temporary non-startup registry key; real Run registration unchanged",
+    "sign_out_or_reboot_test_performed": false
+  },
+  "language_menu_heading": "language"
 }

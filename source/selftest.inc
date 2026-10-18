@@ -382,7 +382,7 @@ int RunLanguageTests(const wchar_t* reportPath) {
         HMENU submenu = menu ? GetSubMenu(menu, 1) : nullptr;
         const bool isEnglish = language == Language::English;
         check(isEnglish ? "english_language_submenu_has_two_options" : "chinese_language_submenu_has_two_options",
-            menu && GetMenuItemCount(menu) == 4 && submenu && GetMenuItemCount(submenu) == 2);
+            menu && GetMenuItemCount(menu) == 5 && submenu && GetMenuItemCount(submenu) == 2);
         const UINT selected = isEnglish ? EnglishCommand : ChineseCommand;
         const UINT other = isEnglish ? ChineseCommand : EnglishCommand;
         check(isEnglish ? "english_radio_selected_without_chinese" : "chinese_radio_selected_without_english",
@@ -390,8 +390,8 @@ int RunLanguageTests(const wchar_t* reportPath) {
             !(GetMenuState(submenu, other, MF_BYCOMMAND) & MF_CHECKED));
         wchar_t caption[96]{};
         if (menu) GetMenuStringW(menu, 1, caption, _countof(caption), MF_BYPOSITION);
-        check(isEnglish ? "english_menu_heading_is_localized" : "chinese_menu_heading_is_localized",
-            wcscmp(caption, Text(language).language) == 0);
+        check(isEnglish ? "english_menu_heading_is_lowercase_language" : "chinese_menu_heading_is_lowercase_language",
+            wcscmp(caption, L"language") == 0);
         if (menu) DestroyMenu(menu);
     }
     {
@@ -446,6 +446,114 @@ int RunLanguageTests(const wchar_t* reportPath) {
         if (GetFileAttributesW(configPath.c_str()) != INVALID_FILE_ATTRIBUTES) DeleteFileW(configPath.c_str());
     }
     WriteReport(reportPath, tests, false);
+    return std::any_of(tests.begin(), tests.end(), [](const auto& test) { return !test.passed; }) ? 1 : 0;
+}
+
+int RunStartupTests(const wchar_t* reportPath) {
+    std::vector<TestCase> tests;
+    const DWORD clipboardSequence = GetClipboardSequenceNumber();
+    auto check = [&](const char* name, bool passed, DWORD detail = 0) {
+        tests.push_back(TestCase{name, passed, detail});
+    };
+    // A unique volatile key never participates in Windows startup. All commands
+    // below use this injected path, leaving the real Run key untouched.
+    const std::wstring keyPath = L"Software\\CopyConfirm.Test." + std::to_wstring(GetCurrentProcessId()) +
+        L"." + std::to_wstring(GetTickCount64());
+    HKEY fixture{};
+    DWORD disposition{};
+    const LSTATUS created = RegCreateKeyExW(HKEY_CURRENT_USER, keyPath.c_str(), 0, nullptr,
+        REG_OPTION_VOLATILE, KEY_QUERY_VALUE | KEY_SET_VALUE, nullptr, &fixture, &disposition);
+    const bool newFixture = created == ERROR_SUCCESS && disposition == REG_CREATED_NEW_KEY;
+    check("unique_non_startup_test_registry_key_created", newFixture, static_cast<DWORD>(created));
+    if (newFixture) {
+        const std::wstring executable = L"C:\\复制确认 Test\\CopyConfirm.exe";
+        const std::wstring command = L"\"" + executable + L"\"";
+        const auto empty = ReadStartup(executable, keyPath);
+        check("missing_registration_is_unchecked", !empty.enabled && empty.error == ERROR_SUCCESS);
+        const wchar_t unrelated[] = L"leave this value unchanged";
+        const bool otherValue = RegSetValueExW(fixture, L"UnrelatedProgram", 0, REG_SZ,
+            reinterpret_cast<const BYTE*>(unrelated), sizeof(unrelated)) == ERROR_SUCCESS;
+        check("enable_accepts_unicode_and_spaces", SetStartup(true, executable, keyPath) == ERROR_SUCCESS);
+        wchar_t stored[261]{};
+        DWORD bytes = sizeof(stored), type{};
+        const LSTATUS storedResult = RegGetValueW(fixture, nullptr, StartupValueName,
+            RRF_RT_REG_SZ, &type, stored, &bytes);
+        check("startup_command_is_quoted_reg_sz", storedResult == ERROR_SUCCESS && type == REG_SZ &&
+            command == stored && bytes == (command.size() + 1) * sizeof(wchar_t));
+        const auto registered = ReadStartup(executable, keyPath);
+        check("registration_is_read_back_from_windows", registered.enabled && registered.error == ERROR_SUCCESS);
+        check("different_executable_is_not_shown_as_enabled",
+            !ReadStartup(L"C:\\Other\\CopyConfirm.exe", keyPath).enabled);
+        for (const Language language : {Language::Chinese, Language::English}) {
+            const bool english = language == Language::English;
+            HMENU menu = BuildTrayMenu(language, false, registered);
+            const UINT state = menu ? GetMenuState(menu, AutoStartCommand, MF_BYCOMMAND) : 0;
+            check(english ? "english_startup_menu_is_checked" : "chinese_startup_menu_is_checked",
+                menu && state != static_cast<UINT>(-1) && (state & MF_CHECKED));
+            wchar_t caption[96]{};
+            if (menu) GetMenuStringW(menu, AutoStartCommand, caption, _countof(caption), MF_BYCOMMAND);
+            check(english ? "english_startup_label_is_correct" : "chinese_startup_label_is_correct",
+                wcscmp(caption, english ? L"Start with Windows" : L"开机自启动") == 0);
+            if (menu) DestroyMenu(menu);
+        }
+        check("overlong_path_is_rejected_without_changing_setting",
+            SetStartup(true, std::wstring(259, L'x'), keyPath) == ERROR_FILENAME_EXCED_RANGE &&
+            ReadStartup(executable, keyPath).enabled);
+        check("embedded_quote_is_rejected_without_changing_setting",
+            SetStartup(true, L"C:\\bad\"path.exe", keyPath) == ERROR_INVALID_PARAMETER &&
+            ReadStartup(executable, keyPath).enabled);
+        check("disable_removes_startup_registration", SetStartup(false, executable, keyPath) == ERROR_SUCCESS &&
+            !ReadStartup(executable, keyPath).enabled);
+        wchar_t other[64]{};
+        bytes = sizeof(other);
+        check("disable_preserves_unrelated_registry_values", otherValue &&
+            RegGetValueW(fixture, nullptr, L"UnrelatedProgram", RRF_RT_REG_SZ, nullptr, other, &bytes) ==
+                ERROR_SUCCESS && wcscmp(other, unrelated) == 0);
+        check("disabling_an_absent_registration_is_safe", SetStartup(false, executable, keyPath) == ERROR_SUCCESS);
+        HMENU unchecked = BuildTrayMenu(Language::English, false, ReadStartup(executable, keyPath));
+        const UINT uncheckedState = unchecked ? GetMenuState(unchecked, AutoStartCommand, MF_BYCOMMAND) : 0;
+        check("disabled_registration_has_no_checkmark", unchecked && uncheckedState != static_cast<UINT>(-1) &&
+            !(uncheckedState & MF_CHECKED));
+        if (unchecked) DestroyMenu(unchecked);
+        const DWORD invalidValue = 1;
+        const bool invalidWritten = RegSetValueExW(fixture, StartupValueName, 0, REG_DWORD,
+            reinterpret_cast<const BYTE*>(&invalidValue), sizeof(invalidValue)) == ERROR_SUCCESS;
+        const auto invalid = ReadStartup(executable, keyPath);
+        check("unexpected_registry_type_is_reported", invalidWritten && invalid.error != ERROR_SUCCESS);
+        HMENU unavailable = BuildTrayMenu(Language::English, false, invalid);
+        const UINT unavailableState = unavailable ? GetMenuState(unavailable, AutoStartCommand, MF_BYCOMMAND) : 0;
+        check("unreadable_setting_is_disabled_in_menu", unavailable &&
+            unavailableState != static_cast<UINT>(-1) && (unavailableState & (MF_GRAYED | MF_DISABLED)));
+        if (unavailable) DestroyMenu(unavailable);
+        RegDeleteValueW(fixture, StartupValueName);
+
+        // Exercise the same native menu command used by the resident app.
+        App app(L"", keyPath);
+        WNDCLASSW windowClass{};
+        windowClass.hInstance = appInstance;
+        windowClass.lpfnWndProc = MainWindowProc;
+        windowClass.lpszClassName = L"CopyConfirm.StartupTest";
+        RegisterClassW(&windowClass);
+        HWND window = CreateWindowExW(WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
+            windowClass.lpszClassName, L"", WS_OVERLAPPED, 0, 0, 0, 0,
+            nullptr, nullptr, appInstance, &app);
+        check("startup_menu_command_test_window_created", window != nullptr);
+        if (window) SendMessageW(window, WM_COMMAND, AutoStartCommand, 0);
+        check("startup_menu_command_enables_current_executable", window && app.CurrentStartup().enabled);
+        App restarted(L"", keyPath);
+        check("startup_checkmark_survives_application_restart", restarted.CurrentStartup().enabled);
+        if (window) SendMessageW(window, WM_COMMAND, AutoStartCommand, 0);
+        check("startup_menu_command_unchecks_and_unregisters", window && !app.CurrentStartup().enabled &&
+            !restarted.CurrentStartup().enabled);
+        if (window) DestroyWindow(window);
+        UnregisterClassW(windowClass.lpszClassName, appInstance);
+        MSG quit{};
+        PeekMessageW(&quit, nullptr, WM_QUIT, WM_QUIT, PM_REMOVE);
+    }
+    if (fixture) RegCloseKey(fixture);
+    if (newFixture) check("temporary_registry_fixture_removed",
+        RegDeleteKeyW(HKEY_CURRENT_USER, keyPath.c_str()) == ERROR_SUCCESS);
+    WriteReport(reportPath, tests, false, 0, clipboardSequence == GetClipboardSequenceNumber());
     return std::any_of(tests.begin(), tests.end(), [](const auto& test) { return !test.passed; }) ? 1 : 0;
 }
 
