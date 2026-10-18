@@ -661,7 +661,8 @@ private:
         MONITORINFO monitor{sizeof(monitor)};
         if (!GetMonitorInfoW(MonitorFromWindow(source, MONITOR_DEFAULTTONEAREST), &monitor)) return;
         position_.x = monitor.rcWork.left + (monitor.rcWork.right - monitor.rcWork.left - surface_.width) / 2;
-        position_.y = monitor.rcWork.bottom - surface_.height - MulDiv(70, dpi ? dpi : 96, 96);
+        // Match the HP Caps Lock panel's visible bottom edge in the reference layout.
+        position_.y = monitor.rcWork.bottom - surface_.height - MulDiv(27, dpi ? dpi : 96, 96);
         confirmedSequence_ = sequence;
         toastStarted_ = GetTickCount64();
         visible_ = true;
