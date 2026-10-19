@@ -1,0 +1,19 @@
+{
+  "exe_version": "1.2.1",
+  "exe_sha256": "6d7de87a657ae4f05cd4af76cde43ef20716747deea4779b4510a272e07b2244",
+  "approved_png_sha256": "777d476605ea4b4f2cda576ce9ca0096be05dfd44fcf239bfab20c2e5732c2dc",
+  "group_resource_id": 101,
+  "frame_sizes": [
+    16,
+    20,
+    24,
+    32,
+    48,
+    64,
+    128,
+    256
+  ],
+  "embedded_icon_frames_match_source": true,
+  "windows_native_icon_loading_succeeded_for_all_sizes": true,
+  "icon_256_and_32_pixel_previews_visually_checked": true
+}

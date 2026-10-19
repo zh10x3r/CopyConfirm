@@ -1,12 +1,12 @@
 {
   "name": "HaveICopied / CopyConfirm",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "date": "2026-10-19",
   "platform": "Windows 10/11 x64",
   "repository": "https://github.com/zh10x3r/CopyConfirm",
-  "binary_bytes": 384512,
-  "sha256": "9aa455cd60d10953ee0ec43403be1e0ccfbe3c079fe983c518ab7ec888d202ed",
-  "previous_binary_sha256": "bec22c2d3240c19ed660446f124709b258c8d34d6427f526ee01b3de57aca3b5",
+  "binary_bytes": 439296,
+  "sha256": "6d7de87a657ae4f05cd4af76cde43ef20716747deea4779b4510a272e07b2244",
+  "previous_binary_sha256": "9aa455cd60d10953ee0ec43403be1e0ccfbe3c079fe983c518ab7ec888d202ed",
   "automatic_checks_passed": 100,
   "automatic_checks_failed": 0,
   "groups_or_checks_skipped": 0,
@@ -30,7 +30,7 @@
     "SHELL32.dll",
     "USER32.dll"
   ],
-  "latest_change": "Added an opt-in current-user Start with Windows checkbox; the language submenu heading is always lowercase language.",
+  "latest_change": "Replaced the application and tray icon with the approved cream tile, yellow rear frame and brown front frame, without a checkmark.",
   "release_validation": {
     "clipboard_and_detector_checks_passed": 50,
     "native_window_and_render_checks_passed": 5,
@@ -65,5 +65,24 @@
     "test_scope": "unique temporary non-startup registry key; real Run registration unchanged",
     "sign_out_or_reboot_test_performed": false
   },
-  "language_menu_heading": "language"
+  "language_menu_heading": "language",
+  "release_status": "local_build_not_published",
+  "icon": {
+    "source": "source/CopyConfirm.png",
+    "windows_icon": "source/CopyConfirm.ico",
+    "approved_png_sha256": "777d476605ea4b4f2cda576ce9ca0096be05dfd44fcf239bfab20c2e5732c2dc",
+    "sizes_px": [
+      16,
+      20,
+      24,
+      32,
+      48,
+      64,
+      128,
+      256
+    ],
+    "all_embedded_frames_match_source": true,
+    "all_sizes_loaded_by_windows": true,
+    "report": "validation/icon-resource-test.json"
+  }
 }
