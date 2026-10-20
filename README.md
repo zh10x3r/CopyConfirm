@@ -1,6 +1,6 @@
-# Have I Copied?
+# CopyConfirm
 
-A lightweight copy confirmation utility for Windows 10 / 11 (64-bit). No installation required. Runs without Python, .NET, or third-party DLLs.
+A lightweight copy confirmation utility for Windows 10 / 11 (64-bit). Run the EXE directly; it creates a per-user Start menu shortcut so Windows can associate its notifications. It runs without Python, .NET, or third-party DLLs.
 
 [Download the latest CopyConfirm.exe](https://github.com/zh10x3r/CopyConfirm/releases/latest/download/CopyConfirm.exe) · [View all releases](https://github.com/zh10x3r/CopyConfirm/releases)
 
@@ -14,7 +14,7 @@ English:
 
 ## Usage
 
-1. Double-click `CopyConfirm.exe`. Once running, you can find the CopyConfirm icon in the system tray at the bottom-right corner of the taskbar. On some computers, you may need to expand the hidden icons.
+1. Double-click `CopyConfirm.exe`. After it starts successfully, Windows displays a system notification: **软件已经开始运行** in Chinese or **CopyConfirm is now running** in English. You can then find the CopyConfirm icon in the system tray at the bottom-right corner of the taskbar. On some computers, you may need to expand the hidden icons.
 2. Select some content and press **Ctrl+C** as usual.
 3. Once the program confirms that the clipboard has been updated and the new data is readable, it briefly displays **Copied to clipboard** near the bottom of the screen containing the active application. The notification disappears after approximately 1.3 seconds.
 4. Right-click the system tray icon to pause or resume notifications, or exit the program.
@@ -52,7 +52,7 @@ Clipboard data is read in a subprocess with enforced timeouts, preventing applic
 
 ## Data Handling
 
-During normal operation, the program only reads the clipboard to verify data availability. It does not modify clipboard contents, save copied data or clipboard history, record unrelated keystrokes, or access the network. Automatic startup is registered only when you check **Start with Windows**; unchecking the option removes the registration.
+During normal operation, the program only reads the clipboard to verify data availability. It does not modify clipboard contents, save copied data or clipboard history, record unrelated keystrokes, or access the network. Automatic startup is registered only when you check **Start with Windows**; unchecking the option removes that registration. The program also creates or updates one per-user Start menu shortcut for Windows notification attribution.
 
 The verification subprocess returns only status information and clipboard format identifiers through memory. It does not return the copied content.
 
@@ -61,6 +61,7 @@ The verification subprocess returns only status information and clipboard format
 ## Source Code and Building
 
 - `source/CopyConfirm.cpp` implements the Windows interface, keyboard monitoring, clipboard verification, and notification rendering.
+- `source/windows_notification.hpp` sends the localized Windows startup notification and maintains its per-user Start menu registration.
 - `source/detector.hpp` implements the confirmation state machine.
 - `source/localization.hpp` defines the Chinese and English interface strings and fonts.
 - `source/selftest.inc` contains automated checks.
@@ -78,7 +79,7 @@ The generated executable is placed in the project root directory, while temporar
 
 ## Validation
 
-The v1.2.2 build passed 105 automated checks. One additional read-only clipboard check was skipped because the current desktop had no suitable owned data to verify. Windows also loaded all eight embedded icon sizes successfully, and each embedded image matched the source icon. These cover clipboard confirmation and native copy/paste in an isolated test desktop, native windows and rendering, both interface languages, the fixed **language** heading, and startup registration and menu commands. Startup tests use a temporary registry key that Windows does not execute, and verify registration, quoted paths containing spaces and Chinese characters, persistence, unregistration, and preservation of unrelated values. The real Windows startup setting and the visible desktop's clipboard were left unchanged.
+The v1.2.3 build passed 110 automated checks. The read-only probe also confirmed that the current clipboard could be read without changing it. The startup-notification integration check confirmed Windows accepted the localized notification through the native notification API. Windows loaded all eight embedded icon sizes successfully, and each embedded image matched the source icon. These checks cover clipboard confirmation and native copy/paste in an isolated test desktop, native windows and rendering, both interface languages, the fixed **language** heading, startup registration and menu commands, and the localized startup message. Startup tests use a temporary registry key that Windows does not execute, and verify registration, quoted paths containing spaces and Chinese characters, persistence, unregistration, and preservation of unrelated values. The notification test creates or updates the current user's Start menu shortcut; the real Windows automatic-start setting and visible desktop clipboard remain unchanged. Windows controls whether the notification appears as a banner or in its notification center.
 
 Reports are in `validation/`. A full Windows sign-out/reboot startup test has not been performed; compatibility with individual third-party applications still depends on their clipboard behavior.
 

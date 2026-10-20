@@ -1,15 +1,15 @@
 {
-  "name": "HaveICopied / CopyConfirm",
-  "version": "1.2.2",
+  "name": "CopyConfirm",
+  "version": "1.2.3",
   "date": "2026-10-20",
   "platform": "Windows 10/11 x64",
   "repository": "https://github.com/zh10x3r/CopyConfirm",
-  "binary_bytes": 441344,
-  "sha256": "01f843e32dd848dd5965712a0692231ff055270c41ecebc065db61312970e3e4",
-  "previous_binary_sha256": "6d7de87a657ae4f05cd4af76cde43ef20716747deea4779b4510a272e07b2244",
-  "automatic_checks_passed": 105,
+  "binary_bytes": 537600,
+  "sha256": "d51071d6546ec3b280ad2579c25df840538c7f7c31941e22c8af61a8434d7cf3",
+  "previous_binary_sha256": "01f843e32dd848dd5965712a0692231ff055270c41ecebc065db61312970e3e4",
+  "automatic_checks_passed": 110,
   "automatic_checks_failed": 0,
-  "groups_or_checks_skipped": 1,
+  "groups_or_checks_skipped": 0,
   "actual_application_copy_paste_integration": "native Windows edit-control copy/read/paste verified in an isolated noninteractive window station; individual third-party applications not exhaustively tested",
   "visible_user_clipboard_modified_by_tests": false,
   "runtime_dlls": [
@@ -27,17 +27,21 @@
     "api-ms-win-crt-stdio-l1-1-0.dll",
     "api-ms-win-crt-string-l1-1-0.dll",
     "api-ms-win-crt-utility-l1-1-0.dll",
+    "ole32.dll",
+    "api-ms-win-core-winrt-l1-1-0.dll",
+    "api-ms-win-core-winrt-string-l1-1-0.dll",
     "SHELL32.dll",
     "USER32.dll"
   ],
-  "latest_change": "Enabled standard Windows tray hover tooltips and synchronized Chinese/English running or not-running text with notification state.",
+  "latest_change": "Added a language-aware Windows native startup notification and its per-user Start menu app identity.",
   "release_validation": {
     "clipboard_and_detector_checks_passed": 50,
     "native_window_and_render_checks_passed": 5,
-    "language_menu_persistence_and_dpi_checks_passed": 27,
+    "language_menu_persistence_and_dpi_checks_passed": 30,
     "chinese_and_english_previews_visually_checked": true,
-    "current_desktop_read_only_probe_checks_passed": 0,
-    "startup_registration_and_native_menu_checks_passed": 23
+    "current_desktop_read_only_probe_checks_passed": 1,
+    "startup_registration_and_native_menu_checks_passed": 23,
+    "native_startup_notification_api_calls_passed": 1
   },
   "fonts": {
     "zh-CN": {
@@ -64,6 +68,19 @@
     "registration": "HKCU Run CopyConfirm value, quoted executable path",
     "test_scope": "unique temporary non-startup registry key; real Run registration unchanged",
     "sign_out_or_reboot_test_performed": false
+  },
+  "startup_notification": {
+    "api": "Windows.UI.Notifications.ToastNotificationManager",
+    "app_user_model_id": "zh10x3r.CopyConfirm",
+    "shortcut": "current-user Programs/CopyConfirm/CopyConfirm.lnk",
+    "messages": {
+      "zh-CN": "软件已经开始运行",
+      "en": "CopyConfirm is now running"
+    },
+    "native_api_test_passed": true,
+    "visible_banner_visual_check_performed": true,
+    "banner_visibility_depends_on_windows_settings": true,
+    "report": "validation/startup-notification-test.json"
   },
   "language_menu_heading": "language",
   "release_status": "local_build_not_published",

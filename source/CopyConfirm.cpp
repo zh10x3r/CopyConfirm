@@ -29,6 +29,7 @@
 #include <vector>
 #include "detector.hpp"
 #include "localization.hpp"
+#include "windows_notification.hpp"
 
 using namespace copyconfirm;
 
@@ -575,6 +576,9 @@ public:
         : settingsPath_(std::move(settingsPath)), language_(LoadLanguage(settingsPath_)),
           startupKey_(std::move(startupKey)) {}
     Language CurrentLanguage() const { return language_; }
+    void ShowStartupNotification() const {
+        windows_notification::ShowStartupNotification(Text(language_).startupNotice);
+    }
     StartupState CurrentStartup() const { return ReadStartup(ExecutablePath(), startupKey_); }
     NOTIFYICONDATAW TrayTooltip() const {
         NOTIFYICONDATAW icon{sizeof(icon)};
@@ -803,6 +807,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     if (arguments) LocalFree(arguments);
     if (args.size() == 3 && args[1] == L"--probe")
         return ProbeEntry(reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(std::wcstoull(args[2].c_str(), nullptr, 10))));
+    if (args.size() == 2 && args[1] == L"--notification-test")
+        return SUCCEEDED(windows_notification::ShowStartupNotification(
+            Text(LoadLanguage(LanguageConfigPath())).startupNotice)) ? 0 : 4;
     if (args.size() == 3 && args[1] == L"--self-test") return RunSelfTests(args[2].c_str());
     if (args.size() == 3 && args[1] == L"--read-only-probe-test") return RunReadOnlyProbeTest(args[2].c_str());
     Gdiplus::GdiplusStartupInput startup;
@@ -853,6 +860,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
             if (mainWindow && IsWindow(mainWindow)) DestroyWindow(mainWindow);
             exitCode = 1;
         } else {
+            app.ShowStartupNotification();
             MSG message{};
             while (GetMessageW(&message, nullptr, 0, 0) > 0) {
                 TranslateMessage(&message);

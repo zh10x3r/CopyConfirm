@@ -377,6 +377,13 @@ int RunLanguageTests(const wchar_t* reportPath) {
     auto check = [&](const char* name, bool passed, DWORD detail = 0) {
         tests.push_back(TestCase{name, passed, detail});
     };
+    check("chinese_startup_notice_is_localized",
+        wcscmp(Text(Language::Chinese).startupNotice, L"软件已经开始运行") == 0);
+    check("english_startup_notice_is_localized",
+        wcscmp(Text(Language::English).startupNotice, L"CopyConfirm is now running") == 0);
+    check("english_startup_error_uses_copyconfirm_name",
+        wcsstr(Text(Language::English).startupError, L"CopyConfirm") != nullptr &&
+        wcsstr(Text(Language::English).startupError, L"HaveICopied") == nullptr);
     for (const Language language : {Language::Chinese, Language::English}) {
         HMENU menu = BuildTrayMenu(language, false);
         HMENU submenu = menu ? GetSubMenu(menu, 1) : nullptr;

@@ -3,6 +3,9 @@
   "station_error": 0,
   "original_clipboard_sequence_unchanged": true,
   "cases": [
+    {"name": "chinese_startup_notice_is_localized", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_startup_notice_is_localized", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_startup_error_uses_copyconfirm_name", "passed": true, "detail": 0, "skipped": false},
     {"name": "chinese_language_submenu_has_two_options", "passed": true, "detail": 0, "skipped": false},
     {"name": "chinese_radio_selected_without_english", "passed": true, "detail": 0, "skipped": false},
     {"name": "chinese_menu_heading_is_lowercase_language", "passed": true, "detail": 0, "skipped": false},
@@ -31,7 +34,7 @@
     {"name": "resume_command_updates_chinese_tooltip", "passed": true, "detail": 0, "skipped": false},
     {"name": "switching_back_to_chinese_is_persisted", "passed": true, "detail": 0, "skipped": false}
   ],
-  "passed": 27,
+  "passed": 30,
   "failed": 0,
   "skipped": 0
 }

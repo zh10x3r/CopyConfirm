@@ -1,0 +1,19 @@
+{
+  "test": "native_windows_startup_notification",
+  "result": "passed",
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "trigger": "CopyConfirm.exe --notification-test",
+  "message_language": "zh-CN",
+  "message": "软件已经开始运行",
+  "app_user_model_id": "zh10x3r.CopyConfirm",
+  "shortcut": "current-user Programs/CopyConfirm/CopyConfirm.lnk",
+  "shortcut_target": "D:\\gitprojects\\CopyConfirm\\CopyConfirm.exe",
+  "shortcut_app_user_model_id_verified": true,
+  "native_notification_api_call_accepted": true,
+  "visible_banner_visual_check_performed": true,
+  "clipboard_sequence_unchanged": true,
+  "automatic_startup_setting_changed": false,
+  "note": "Windows controls banner visibility according to the user's notification settings."
+}
