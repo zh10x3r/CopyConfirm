@@ -1,6 +1,6 @@
 {
-  "exe_version": "1.2.1",
-  "exe_sha256": "6d7de87a657ae4f05cd4af76cde43ef20716747deea4779b4510a272e07b2244",
+  "exe_version": "1.2.2",
+  "exe_sha256": "01f843e32dd848dd5965712a0692231ff055270c41ecebc065db61312970e3e4",
   "approved_png_sha256": "777d476605ea4b4f2cda576ce9ca0096be05dfd44fcf239bfab20c2e5732c2dc",
   "group_resource_id": 101,
   "frame_sizes": [

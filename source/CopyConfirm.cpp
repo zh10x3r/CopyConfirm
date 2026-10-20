@@ -576,6 +576,15 @@ public:
           startupKey_(std::move(startupKey)) {}
     Language CurrentLanguage() const { return language_; }
     StartupState CurrentStartup() const { return ReadStartup(ExecutablePath(), startupKey_); }
+    NOTIFYICONDATAW TrayTooltip() const {
+        NOTIFYICONDATAW icon{sizeof(icon)};
+        icon.hWnd = window_; icon.uID = 1;
+        // Version 4 suppresses the standard hover tooltip unless SHOWTIP is set.
+        icon.uFlags = NIF_TIP | NIF_SHOWTIP;
+        const auto& text = Text(language_);
+        wcscpy_s(icon.szTip, _countof(icon.szTip), paused.load() ? text.pausedTooltip : text.runningTooltip);
+        return icon;
+    }
     void Attach(HWND window) { window_ = window; }
     bool Initialize(HWND window) {
         window_ = window;
@@ -692,23 +701,17 @@ private:
         if (!gate_.Pending()) KillTimer(window_, PollTimer);
     }
     bool AddTray() {
-        NOTIFYICONDATAW icon{sizeof(icon)};
-        icon.hWnd = window_; icon.uID = 1;
-        icon.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+        auto icon = TrayTooltip();
+        icon.uFlags |= NIF_ICON | NIF_MESSAGE;
         icon.uCallbackMessage = TrayMessage;
         icon.hIcon = LoadIconW(appInstance, MAKEINTRESOURCEW(101));
-        const auto& text = Text(language_);
-        wcscpy_s(icon.szTip, _countof(icon.szTip), paused.load() ? text.pausedTooltip : text.runningTooltip);
         if (!Shell_NotifyIconW(NIM_ADD, &icon)) return false;
         icon.uVersion = NOTIFYICON_VERSION_4;
         Shell_NotifyIconW(NIM_SETVERSION, &icon);
         return true;
     }
     void UpdateTooltip() {
-        NOTIFYICONDATAW icon{sizeof(icon)};
-        icon.hWnd = window_; icon.uID = 1; icon.uFlags = NIF_TIP;
-        const auto& text = Text(language_);
-        wcscpy_s(icon.szTip, _countof(icon.szTip), paused.load() ? text.pausedTooltip : text.runningTooltip);
+        auto icon = TrayTooltip();
         Shell_NotifyIconW(NIM_MODIFY, &icon);
     }
     void TrayMenu() {

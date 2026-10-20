@@ -431,11 +431,27 @@ int RunLanguageTests(const wchar_t* reportPath) {
             windowClass.lpszClassName, L"", WS_OVERLAPPED, 0, 0, 0, 0,
             nullptr, nullptr, appInstance, &app);
         check("new_user_defaults_to_chinese", app.CurrentLanguage() == Language::Chinese);
+        check("running_chinese_tooltip_matches_agreed_text",
+            wcscmp(app.TrayTooltip().szTip, L"复制确认 · 正在运行") == 0);
+        const auto tooltip = app.TrayTooltip();
+        check("standard_hover_tooltip_enabled_for_version_four",
+            window && tooltip.hWnd == window && tooltip.uID == 1 &&
+            (tooltip.uFlags & (NIF_TIP | NIF_SHOWTIP)) == (NIF_TIP | NIF_SHOWTIP));
         if (window) SendMessageW(window, WM_COMMAND, EnglishCommand, 0);
         check("english_menu_command_switches_active_language", window && app.CurrentLanguage() == Language::English);
+        check("language_switch_updates_running_tooltip",
+            wcscmp(app.TrayTooltip().szTip, L"CopyConfirm · Running") == 0);
         App restarted(configPath);
         check("english_selection_survives_application_restart", restarted.CurrentLanguage() == Language::English);
+        if (window) SendMessageW(window, WM_COMMAND, PauseCommand, 0);
+        check("pause_command_updates_english_tooltip",
+            paused.load() && wcscmp(app.TrayTooltip().szTip, L"CopyConfirm · Not running") == 0);
         if (window) SendMessageW(window, WM_COMMAND, ChineseCommand, 0);
+        check("language_switch_preserves_paused_tooltip_state",
+            paused.load() && wcscmp(app.TrayTooltip().szTip, L"复制确认 · 未运行") == 0);
+        if (window) SendMessageW(window, WM_COMMAND, PauseCommand, 0);
+        check("resume_command_updates_chinese_tooltip",
+            !paused.load() && wcscmp(app.TrayTooltip().szTip, L"复制确认 · 正在运行") == 0);
         App switchedBack(configPath);
         check("switching_back_to_chinese_is_persisted", window && app.CurrentLanguage() == Language::Chinese &&
             switchedBack.CurrentLanguage() == Language::Chinese);

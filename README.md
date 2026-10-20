@@ -21,6 +21,8 @@ English:
 5. Right-click → **language → English** to switch to English. The notification will display **Copied to clipboard**, and the context menu and tray tooltip will also switch to English. Select **language → 中文** to switch back to Chinese. The submenu heading always reads **language**, in either interface language.
 6. Check **Start with Windows** (**开机自启动** in Chinese) to run the program automatically when you sign in to Windows. Click it again to disable this. The option is off by default and applies to the current user.
 
+Hover over the tray icon to see the current notification state in the selected language. English tooltips read **CopyConfirm · Running** or **CopyConfirm · Not running**; "Not running" means notifications are paused. The tooltip updates after changing the language or pausing/resuming notifications.
+
 Keep the executable in a permanent folder when using automatic startup. If you move it, select **Start with Windows** again from the new location.
 
 The program responds only to actual **Ctrl+C** keystrokes without Shift, Alt, or Win modifiers. Other operations, such as copying through a context menu, pressing Ctrl+X, or taking screenshots, do not trigger notifications.
@@ -76,7 +78,7 @@ The generated executable is placed in the project root directory, while temporar
 
 ## Validation
 
-The v1.2.1 build passed 100 automated checks. Windows also loaded all eight embedded icon sizes successfully, and each embedded image matched the source icon. These cover clipboard confirmation and native copy/paste in an isolated test desktop, native windows and rendering, both interface languages, the fixed **language** heading, and startup registration and menu commands. Startup tests use a temporary registry key that Windows does not execute, and verify registration, quoted paths containing spaces and Chinese characters, persistence, unregistration, and preservation of unrelated values. The real Windows startup setting and the visible desktop's clipboard were left unchanged.
+The v1.2.2 build passed 105 automated checks. One additional read-only clipboard check was skipped because the current desktop had no suitable owned data to verify. Windows also loaded all eight embedded icon sizes successfully, and each embedded image matched the source icon. These cover clipboard confirmation and native copy/paste in an isolated test desktop, native windows and rendering, both interface languages, the fixed **language** heading, and startup registration and menu commands. Startup tests use a temporary registry key that Windows does not execute, and verify registration, quoted paths containing spaces and Chinese characters, persistence, unregistration, and preservation of unrelated values. The real Windows startup setting and the visible desktop's clipboard were left unchanged.
 
 Reports are in `validation/`. A full Windows sign-out/reboot startup test has not been performed; compatibility with individual third-party applications still depends on their clipboard behavior.
 

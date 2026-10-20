@@ -19,7 +19,7 @@ struct Labels {
 
 inline constexpr Labels ChineseLabels{
     L"已复制到剪贴板", L"暂停提示", L"恢复提示", L"开机自启动", L"退出",
-    L"复制确认 · 正在运行", L"复制确认 · 已暂停",
+    L"复制确认 · 正在运行", L"复制确认 · 未运行",
     L"无法启动复制确认。请关闭已有实例后重试。",
     L"无法更改开机自启动设置。",
     L"Microsoft YaHei UI", 12.0f
@@ -27,7 +27,7 @@ inline constexpr Labels ChineseLabels{
 
 inline constexpr Labels EnglishLabels{
     L"Copied to clipboard", L"Pause notifications", L"Resume notifications", L"Start with Windows", L"Exit",
-    L"HaveICopied · Running", L"HaveICopied · Paused",
+    L"CopyConfirm · Running", L"CopyConfirm · Not running",
     L"Unable to start HaveICopied. Close any existing instance and try again.",
     L"Unable to change the Start with Windows setting.",
     L"Segoe UI", 13.0f
