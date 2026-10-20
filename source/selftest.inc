@@ -437,9 +437,11 @@ int RunLanguageTests(const wchar_t* reportPath) {
         HWND window = CreateWindowExW(WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
             windowClass.lpszClassName, L"", WS_OVERLAPPED, 0, 0, 0, 0,
             nullptr, nullptr, appInstance, &app);
-        check("new_user_defaults_to_chinese", app.CurrentLanguage() == Language::Chinese);
-        check("running_chinese_tooltip_matches_agreed_text",
-            wcscmp(app.TrayTooltip().szTip, L"复制确认 · 正在运行") == 0);
+        check("new_user_defaults_to_english", app.CurrentLanguage() == Language::English);
+        check("first_run_startup_notice_is_english",
+            wcscmp(Text(app.CurrentLanguage()).startupNotice, L"CopyConfirm is now running") == 0);
+        check("running_english_tooltip_matches_default_text",
+            wcscmp(app.TrayTooltip().szTip, L"CopyConfirm · Running") == 0);
         const auto tooltip = app.TrayTooltip();
         check("standard_hover_tooltip_enabled_for_version_four",
             window && tooltip.hWnd == window && tooltip.uID == 1 &&

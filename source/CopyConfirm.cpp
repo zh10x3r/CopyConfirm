@@ -86,10 +86,10 @@ std::wstring LanguageConfigPath() {
 }
 
 Language LoadLanguage(const std::wstring& path) {
-    wchar_t value[16]{};
-    if (!path.empty()) GetPrivateProfileStringW(L"General", L"Language", L"zh-CN",
+    wchar_t value[16] = L"en";
+    if (!path.empty()) GetPrivateProfileStringW(L"General", L"Language", L"en",
         value, _countof(value), path.c_str());
-    return _wcsicmp(value, L"en") == 0 ? Language::English : Language::Chinese;
+    return _wcsicmp(value, L"zh-CN") == 0 ? Language::Chinese : Language::English;
 }
 
 bool SaveLanguage(const std::wstring& path, Language language) {

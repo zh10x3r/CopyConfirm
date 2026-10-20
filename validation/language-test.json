@@ -23,8 +23,9 @@
     {"name": "english_bold_caption_fits_at_192dpi", "passed": true, "detail": 0, "skipped": false},
     {"name": "languages_keep_same_panel_size_at_192dpi", "passed": true, "detail": 0, "skipped": false},
     {"name": "temporary_language_settings_will_not_overwrite_existing_file", "passed": true, "detail": 0, "skipped": false},
-    {"name": "new_user_defaults_to_chinese", "passed": true, "detail": 0, "skipped": false},
-    {"name": "running_chinese_tooltip_matches_agreed_text", "passed": true, "detail": 0, "skipped": false},
+    {"name": "new_user_defaults_to_english", "passed": true, "detail": 0, "skipped": false},
+    {"name": "first_run_startup_notice_is_english", "passed": true, "detail": 0, "skipped": false},
+    {"name": "running_english_tooltip_matches_default_text", "passed": true, "detail": 0, "skipped": false},
     {"name": "standard_hover_tooltip_enabled_for_version_four", "passed": true, "detail": 0, "skipped": false},
     {"name": "english_menu_command_switches_active_language", "passed": true, "detail": 0, "skipped": false},
     {"name": "language_switch_updates_running_tooltip", "passed": true, "detail": 0, "skipped": false},
@@ -34,7 +35,7 @@
     {"name": "resume_command_updates_chinese_tooltip", "passed": true, "detail": 0, "skipped": false},
     {"name": "switching_back_to_chinese_is_persisted", "passed": true, "detail": 0, "skipped": false}
   ],
-  "passed": 30,
+  "passed": 31,
   "failed": 0,
   "skipped": 0
 }
