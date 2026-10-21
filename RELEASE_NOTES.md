@@ -1,4 +1,4 @@
-# CopyConfirm v1.2.4（本地构建，尚未发布）
+# CopyConfirm v1.2.4
 
 Windows 10 / 11 x64 免安装版本，下载 `CopyConfirm.exe` 后直接运行。
 
@@ -18,7 +18,7 @@ Windows 10 / 11 x64 免安装版本，下载 `CopyConfirm.exe` 后直接运行�
 
 本次构建通过 110 项自动检查、0 项失败；另有 1 项只读剪贴板探针因当前剪贴板没有可读取的数据而跳过。检查包含首次运行英语默认值和语言保存、独立测试剪贴板中的复制/读取/粘贴与延迟渲染、中英文菜单和缩放、四种悬停文案与状态切换、临时测试位置中的自启动登记/取消/状态恢复，以及 Windows 原生启动通知接口调用。跳过的探针没有改动剪贴板。通知接口测试会创建或更新当前用户开始菜单中的 CopyConfirm 快捷方式；测试未改动实际的 Windows 自启动设置，尚未通过注销或重启进行登录验证。
 
-本地文件：`CopyConfirm.exe` 和 `SHA256SUMS.txt`。此 EXE 未做代码签名。
+发布附件：`CopyConfirm.exe` 和 `SHA256SUMS.txt`。此 EXE 未做代码签名。
 
 SHA-256（CopyConfirm.exe）：
 

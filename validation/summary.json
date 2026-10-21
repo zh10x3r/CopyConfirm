@@ -84,7 +84,8 @@
   },
   "default_language_without_saved_preference": "en",
   "language_menu_heading": "language",
-  "release_status": "local_build_not_published",
+  "release_status": "published",
+  "release_url": "https://github.com/zh10x3r/CopyConfirm/releases/tag/v1.2.4",
   "icon": {
     "source": "source/CopyConfirm.png",
     "windows_icon": "source/CopyConfirm.ico",
