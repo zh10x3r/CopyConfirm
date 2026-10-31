@@ -38,6 +38,8 @@ constexpr wchar_t AppName[] = L"复制确认";
 constexpr UINT CopyMessage = WM_APP + 1;
 constexpr UINT ProbeMessage = WM_APP + 2;
 constexpr UINT TrayMessage = WM_APP + 3;
+constexpr UINT RefreshKeyboardMessage = WM_APP + 4;
+constexpr DWORD KeyboardRefreshIntervalMs = 2000;
 constexpr UINT PollTimer = 1;
 constexpr UINT ToastTimer = 2;
 constexpr UINT PauseCommand = 101;
@@ -419,7 +421,7 @@ private:
     std::thread thread_;
 };
 
-KeyChord chord;
+thread_local KeyChord chord;
 LRESULT CALLBACK KeyboardCallback(int code, WPARAM message, LPARAM data) {
     if (code == HC_ACTION) {
         const auto* key = reinterpret_cast<const KBDLLHOOKSTRUCT*>(data);
@@ -442,41 +444,84 @@ LRESULT CALLBACK KeyboardCallback(int code, WPARAM message, LPARAM data) {
 
 class KeyboardThread {
 public:
+    using InstallHook = decltype(&SetWindowsHookExW);
+    using RemoveHook = decltype(&UnhookWindowsHookEx);
+    explicit KeyboardThread(DWORD refreshInterval = KeyboardRefreshIntervalMs,
+                            InstallHook install = SetWindowsHookExW,
+                            RemoveHook remove = UnhookWindowsHookEx)
+        : refreshInterval_(refreshInterval), install_(install), remove_(remove) {}
     bool Start() {
+        if (thread_) return installed_.load();
         ready_ = CreateEventW(nullptr, TRUE, FALSE, nullptr);
         if (!ready_) return false;
         thread_ = CreateThread(nullptr, 0, Entry, this, 0, &threadId_);
         if (!thread_) { CloseHandle(ready_); ready_ = nullptr; return false; }
-        return WaitForSingleObject(ready_, 3000) == WAIT_OBJECT_0 && installed_.load();
+        const bool started = WaitForSingleObject(ready_, 3000) == WAIT_OBJECT_0 && installed_.load();
+        if (!started) Stop();
+        return started;
     }
-    ~KeyboardThread() {
+    ~KeyboardThread() { Stop(); }
+    void Stop() {
         if (thread_) {
             PostThreadMessageW(threadId_, WM_QUIT, 0, 0);
             WaitForSingleObject(thread_, INFINITE);
             CloseHandle(thread_);
+            thread_ = nullptr;
         }
-        if (ready_) CloseHandle(ready_);
+        if (ready_) { CloseHandle(ready_); ready_ = nullptr; }
+        threadId_ = 0;
+        installed_.store(false);
+    }
+    bool RequestRefresh() const {
+        return thread_ && PostThreadMessageW(threadId_, RefreshKeyboardMessage, 0, 0);
     }
 private:
+    bool Refresh(HHOOK& hook) {
+        // Windows can silently remove a low-level hook after a timeout; the
+        // saved HHOOK and installed_ flag cannot detect it. Renew periodically
+        // on the owning thread, and retry next tick if installation fails.
+        const HHOOK replacement = install_(WH_KEYBOARD_LL, KeyboardCallback, appInstance, 0);
+        if (!replacement) return false;
+        const HHOOK previous = hook;
+        hook = replacement;
+        // Install first so a healthy listener has no registration gap. An
+        // already removed handle may be recycled for the replacement.
+        if (previous && previous != replacement) remove_(previous);
+        chord.Synchronize((GetAsyncKeyState('C') & 0x8000) != 0);
+        return true;
+    }
     static DWORD WINAPI Entry(void* context) {
         auto& self = *static_cast<KeyboardThread*>(context);
         MSG message{};
         PeekMessageW(&message, nullptr, WM_USER, WM_USER, PM_NOREMOVE);
-        HHOOK hook = SetWindowsHookExW(WH_KEYBOARD_LL, KeyboardCallback, appInstance, 0);
-        self.installed_.store(hook != nullptr);
+        HHOOK hook{};
+        const bool hooked = self.Refresh(hook);
+        const UINT_PTR timer = hooked ? SetTimer(nullptr, 0, self.refreshInterval_, nullptr) : 0;
+        self.installed_.store(hooked && timer != 0);
         SetEvent(self.ready_);
-        if (!hook) return 1;
-        while (GetMessageW(&message, nullptr, 0, 0) > 0) {
-            TranslateMessage(&message);
-            DispatchMessageW(&message);
+        if (self.installed_.load()) {
+            while (GetMessageW(&message, nullptr, 0, 0) > 0) {
+                if (message.message == RefreshKeyboardMessage ||
+                    (message.message == WM_TIMER && !message.hwnd && message.wParam == timer)) {
+                    self.Refresh(hook);
+                } else {
+                    TranslateMessage(&message);
+                    DispatchMessageW(&message);
+                }
+            }
         }
-        UnhookWindowsHookEx(hook);
+        if (timer) KillTimer(nullptr, timer);
+        if (hook) self.remove_(hook);
+        self.installed_.store(false);
         return 0;
     }
     HANDLE thread_{};
     HANDLE ready_{};
     DWORD threadId_{};
     std::atomic<bool> installed_{false};
+    DWORD refreshInterval_;
+    InstallHook install_;
+    RemoveHook remove_;
 };
 
 class ToastSurface {
@@ -590,6 +635,7 @@ public:
         return icon;
     }
     void Attach(HWND window) { window_ = window; }
+    void AttachKeyboard(KeyboardThread* keyboard) { keyboard_ = keyboard; }
     bool Initialize(HWND window) {
         window_ = window;
         taskbarCreated_ = RegisterWindowMessageW(L"TaskbarCreated");
@@ -608,6 +654,7 @@ public:
         return true;
     }
     void Shutdown() {
+        if (keyboard_) keyboard_->Stop();
         worker_.reset();
         if (listening_) RemoveClipboardFormatListener(window_);
         listening_ = false;
@@ -667,8 +714,8 @@ public:
                     FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                         nullptr, static_cast<DWORD>(error), 0, detail, _countof(detail), nullptr);
                     const auto& text = Text(language_);
-                    const std::wstring message = std::wstring(text.autoStartError) + L"\n\n" + detail;
-                    MessageBoxW(window_, message.c_str(), AppName, MB_OK | MB_ICONERROR);
+                    const std::wstring errorMessage = std::wstring(text.autoStartError) + L"\n\n" + detail;
+                    MessageBoxW(window_, errorMessage.c_str(), AppName, MB_OK | MB_ICONERROR);
                 }
             }
             if (LOWORD(wParam) == PauseCommand) {
@@ -684,6 +731,16 @@ public:
                 UpdateTooltip();
             }
             return 0;
+        case WM_POWERBROADCAST:
+            if (wParam == PBT_APMSUSPEND || wParam == PBT_APMRESUMEAUTOMATIC ||
+                wParam == PBT_APMRESUMESUSPEND) {
+                latestAttempt.fetch_add(1);
+                gate_.Cancel();
+                HideToast();
+                if (window_) KillTimer(window_, PollTimer);
+                if (wParam != PBT_APMSUSPEND && keyboard_) keyboard_->RequestRefresh();
+            }
+            return TRUE;
         case WM_QUERYENDSESSION:
             return TRUE;
         case WM_DESTROY:
@@ -768,6 +825,7 @@ private:
     UINT taskbarCreated_{};
     CopyGate gate_;
     std::unique_ptr<ProbeWorker> worker_;
+    KeyboardThread* keyboard_{};
     ToastSurface surface_;
     POINT position_{};
     ULONGLONG toastStarted_{};
@@ -796,6 +854,7 @@ int RunSmokeTest(const wchar_t* reportPath);
 int RunReadOnlyProbeTest(const wchar_t* reportPath);
 int RunLanguageTests(const wchar_t* reportPath);
 int RunStartupTests(const wchar_t* reportPath);
+int RunKeyboardRecoveryTests(const wchar_t* reportPath);
 }
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
@@ -812,6 +871,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
             Text(LoadLanguage(LanguageConfigPath())).startupNotice)) ? 0 : 4;
     if (args.size() == 3 && args[1] == L"--self-test") return RunSelfTests(args[2].c_str());
     if (args.size() == 3 && args[1] == L"--read-only-probe-test") return RunReadOnlyProbeTest(args[2].c_str());
+    if (args.size() == 3 && args[1] == L"--keyboard-recovery-test") return RunKeyboardRecoveryTests(args[2].c_str());
     Gdiplus::GdiplusStartupInput startup;
     ULONG_PTR graphicsToken{};
     if (Gdiplus::GdiplusStartup(&graphicsToken, &startup, nullptr) != Gdiplus::Ok) return 2;
@@ -854,6 +914,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
             windowClass.lpszClassName, AppName, WS_OVERLAPPED, 0, 0, 0, 0,
             nullptr, nullptr, instance, &app);
         KeyboardThread keyboard;
+        app.AttachKeyboard(&keyboard);
         if (!mainWindow || !app.Initialize(mainWindow) || !keyboard.Start()) {
             const auto& text = Text(LoadLanguage(LanguageConfigPath()));
             MessageBoxW(nullptr, text.startupError, AppName, MB_OK | MB_ICONERROR);

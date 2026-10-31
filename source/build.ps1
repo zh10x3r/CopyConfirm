@@ -6,7 +6,8 @@ $ErrorActionPreference = 'Stop'
 $taskCompiler = Join-Path $Toolchain 'g++.exe'
 $taskResourceCompiler = Join-Path $Toolchain 'windres.exe'
 if (!(Test-Path -LiteralPath $taskCompiler) -or !(Test-Path -LiteralPath $taskResourceCompiler)) {
-    throw 'MSYS2 UCRT64 g++ and windres are required. No installation is performed by this script.'
+    & (Join-Path $PSScriptRoot 'build-msvc.ps1') -BuildDirectory $BuildDirectory
+    return
 }
 New-Item -ItemType Directory -Path $BuildDirectory -Force | Out-Null
 $taskBuildPath = (Resolve-Path -LiteralPath $BuildDirectory).Path

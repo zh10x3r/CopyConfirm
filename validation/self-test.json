@@ -29,6 +29,9 @@
     {"name": "ctrl_win_c_does_not_trigger", "passed": true, "detail": 0, "skipped": false},
     {"name": "synthetic_key_injection_does_not_trigger", "passed": true, "detail": 0, "skipped": false},
     {"name": "paused_monitor_does_not_trigger", "passed": true, "detail": 0, "skipped": false},
+    {"name": "missed_key_up_recovers_after_state_sync", "passed": true, "detail": 0, "skipped": false},
+    {"name": "hook_refresh_does_not_repeat_held_c", "passed": true, "detail": 0, "skipped": false},
+    {"name": "copy_after_refreshed_key_release_is_detected", "passed": true, "detail": 0, "skipped": false},
     {"name": "native_unicode_memory_handle_is_readable", "passed": true, "detail": 0, "skipped": false},
     {"name": "native_empty_unicode_data_is_rejected", "passed": true, "detail": 0, "skipped": false},
     {"name": "null_clipboard_data_is_rejected", "passed": true, "detail": 0, "skipped": false},
@@ -54,7 +57,7 @@
     {"name": "slow_helper_is_terminated_at_timeout", "passed": true, "detail": 0, "skipped": false},
     {"name": "superseded_helper_is_canceled_promptly", "passed": true, "detail": 0, "skipped": false}
   ],
-  "passed": 50,
+  "passed": 53,
   "failed": 0,
   "skipped": 0
 }

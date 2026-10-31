@@ -110,6 +110,9 @@ private:
 // fresh C keydown with Ctrl, and rejects Ctrl+Shift/Alt/Win+C and injected keys.
 class KeyChord {
 public:
+    // Reconcile a missed key-up after a desktop switch or hook recovery,
+    // while preserving suppression of repeats when C is still held.
+    void Synchronize(bool cDown) { cDown_ = cDown; }
     bool Feed(bool isC, bool down, bool ctrl, bool shift, bool alt, bool win,
               bool injected, bool enabled) {
         if (!isC || injected) return false;

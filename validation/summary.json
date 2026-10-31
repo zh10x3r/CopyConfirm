@@ -1,47 +1,37 @@
 {
   "name": "CopyConfirm",
-  "version": "1.2.4",
-  "date": "2026-10-20",
+  "version": "1.2.5",
+  "date": "2026-10-31",
   "platform": "Windows 10/11 x64",
   "repository": "https://github.com/zh10x3r/CopyConfirm",
-  "binary_bytes": 534528,
-  "sha256": "dc04fb58eb0a05c16cde3190bf1600d161612c0a0204d83baf9173c191629c61",
-  "previous_binary_sha256": "d51071d6546ec3b280ad2579c25df840538c7f7c31941e22c8af61a8434d7cf3",
-  "automatic_checks_passed": 110,
+  "binary_bytes": 317952,
+  "sha256": "74009c293fe678ddec4d5a165b8fc9aab5d98fe893ed920e428e1dc2fef6b92f",
+  "previous_binary_sha256": "dc04fb58eb0a05c16cde3190bf1600d161612c0a0204d83baf9173c191629c61",
+  "automatic_checks_passed": 126,
   "automatic_checks_failed": 0,
-  "groups_or_checks_skipped": 1,
+  "groups_or_checks_skipped": 0,
   "actual_application_copy_paste_integration": "native Windows edit-control copy/read/paste verified in an isolated noninteractive window station; individual third-party applications not exhaustively tested",
   "visible_user_clipboard_modified_by_tests": false,
   "runtime_dlls": [
-    "ADVAPI32.dll",
+    "USER32.dll",
     "GDI32.dll",
-    "gdiplus.dll",
-    "KERNEL32.dll",
-    "api-ms-win-crt-convert-l1-1-0.dll",
-    "api-ms-win-crt-environment-l1-1-0.dll",
-    "api-ms-win-crt-heap-l1-1-0.dll",
-    "api-ms-win-crt-locale-l1-1-0.dll",
-    "api-ms-win-crt-math-l1-1-0.dll",
-    "api-ms-win-crt-private-l1-1-0.dll",
-    "api-ms-win-crt-runtime-l1-1-0.dll",
-    "api-ms-win-crt-stdio-l1-1-0.dll",
-    "api-ms-win-crt-string-l1-1-0.dll",
-    "api-ms-win-crt-utility-l1-1-0.dll",
-    "ole32.dll",
-    "api-ms-win-core-winrt-l1-1-0.dll",
-    "api-ms-win-core-winrt-string-l1-1-0.dll",
     "SHELL32.dll",
-    "USER32.dll"
+    "gdiplus.dll",
+    "ole32.dll",
+    "api-ms-win-core-winrt-string-l1-1-0.dll",
+    "api-ms-win-core-winrt-l1-1-0.dll",
+    "ADVAPI32.dll",
+    "KERNEL32.dll"
   ],
-  "latest_change": "First launch now defaults to English; a saved language choice continues to take precedence.",
+  "latest_change": "Recover copy notifications after silent keyboard hook loss, with periodic renewal, failed-install retries, key-state synchronization, and resume recovery.",
   "release_validation": {
-    "clipboard_and_detector_checks_passed": 50,
+    "clipboard_and_detector_checks_passed": 53,
     "native_window_and_render_checks_passed": 5,
     "language_menu_persistence_and_dpi_checks_passed": 31,
-    "chinese_and_english_previews_visually_checked": true,
-    "current_desktop_read_only_probe_checks_passed": 0,
+    "chinese_and_english_previews_visually_checked": false,
+    "current_desktop_read_only_probe_checks_passed": 1,
     "startup_registration_and_native_menu_checks_passed": 23,
-    "native_startup_notification_api_calls_passed": 1
+    "native_keyboard_recovery_checks_passed": 13
   },
   "fonts": {
     "zh-CN": {
@@ -80,12 +70,13 @@
     "native_api_test_passed": true,
     "visible_banner_visual_check_performed": true,
     "banner_visibility_depends_on_windows_settings": true,
-    "report": "validation/startup-notification-test.json"
+    "report": "validation/startup-notification-test.json",
+    "last_native_api_test_version": "1.2.4",
+    "repeated_for_current_build": false
   },
   "default_language_without_saved_preference": "en",
   "language_menu_heading": "language",
-  "release_status": "published",
-  "release_url": "https://github.com/zh10x3r/CopyConfirm/releases/tag/v1.2.4",
+  "release_status": "local_build_not_published",
   "icon": {
     "source": "source/CopyConfirm.png",
     "windows_icon": "source/CopyConfirm.ico",
@@ -116,5 +107,32 @@
       "paused": "CopyConfirm · Not running"
     },
     "live_hover_visually_verified": false
-  }
+  },
+  "latest_published_release_url": "https://github.com/zh10x3r/CopyConfirm/releases/tag/v1.2.4",
+  "build": {
+    "compiler": "MSVC x64 14.51.36260",
+    "static_cpp_runtime": true,
+    "additional_runtime_installation_required": false
+  },
+  "keyboard_listener": {
+    "renewal_interval_ms": 2000,
+    "renewal_retries_after_failure": true,
+    "refresh_on_resume": true,
+    "preserves_held_c_key_suppression": true,
+    "native_hook_loss_recovery_verified": true,
+    "physical_sleep_or_unlock_test_performed": false,
+    "multi_day_interactive_soak_performed": false,
+    "historical_os_timeout_trigger_proven": false,
+    "baseline_report": "validation/keyboard-baseline-v1.2.4.json",
+    "current_report": "validation/keyboard-recovery-test.json",
+    "analysis": "validation/keyboard-failure-analysis.md"
+  },
+  "current_build_reports": [
+    "validation/self-test.json",
+    "validation/smoke-test.json",
+    "validation/language-test.json",
+    "validation/startup-test.json",
+    "validation/keyboard-recovery-test.json",
+    "validation/read-only-probe-test.json"
+  ]
 }

@@ -1,6 +1,6 @@
 {
-  "exe_version": "1.2.2",
-  "exe_sha256": "01f843e32dd848dd5965712a0692231ff055270c41ecebc065db61312970e3e4",
+  "exe_version": "1.2.5",
+  "exe_sha256": "74009c293fe678ddec4d5a165b8fc9aab5d98fe893ed920e428e1dc2fef6b92f",
   "approved_png_sha256": "777d476605ea4b4f2cda576ce9ca0096be05dfd44fcf239bfab20c2e5732c2dc",
   "group_resource_id": 101,
   "frame_sizes": [
@@ -15,5 +15,5 @@
   ],
   "embedded_icon_frames_match_source": true,
   "windows_native_icon_loading_succeeded_for_all_sizes": true,
-  "icon_256_and_32_pixel_previews_visually_checked": true
+  "artwork_unchanged_since_previously_approved_preview": true
 }

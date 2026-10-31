@@ -23,6 +23,8 @@ English:
 
 Hover over the tray icon to see the current notification state in the selected language. English tooltips read **CopyConfirm · Running** or **CopyConfirm · Not running**; "Not running" means notifications are paused. The tooltip updates after changing the language or pausing/resuming notifications.
 
+The keyboard listener renews its registration every two seconds and immediately after sleep resumes. This allows notifications to recover if Windows silently removes the low-level keyboard hook. A failed renewal is retried automatically.
+
 Keep the executable in a permanent folder when using automatic startup. If you move it, select **Start with Windows** again from the new location.
 
 The program responds only to actual **Ctrl+C** keystrokes without Shift, Alt, or Win modifiers. Other operations, such as copying through a context menu, pressing Ctrl+X, or taking screenshots, do not trigger notifications.
@@ -65,21 +67,24 @@ The verification subprocess returns only status information and clipboard format
 - `source/detector.hpp` implements the confirmation state machine.
 - `source/localization.hpp` defines the Chinese and English interface strings and fonts.
 - `source/selftest.inc` contains automated checks.
+- `source/build-msvc.ps1` builds with an existing Visual Studio C++ desktop toolchain and a static C++ runtime.
 - `source/CopyConfirm.png` is the approved icon artwork; `source/CopyConfirm.ico` contains the Windows icon at sizes from 16 to 256 pixels.
 
-If the MSYS2 UCRT64 toolchain is already installed, run the following command in PowerShell:
+With either MSYS2 UCRT64 or Visual Studio's C++ desktop tools installed, run the following command in PowerShell:
 
 ```powershell
 .\source\build.ps1
 ```
 
-The default toolchain location is `C:\msys64\ucrt64\bin\`. You can specify a different location using the `-Toolchain` parameter. The build script does not install any software.
+The script first looks for MSYS2 UCRT64 at `C:\msys64\ucrt64\bin\` (or the location passed to `-Toolchain`). If it is unavailable, it finds an installed Visual Studio C++ toolchain. Neither build path installs software. Both produce a standalone x64 executable using a static C++ runtime.
 
 The generated executable is placed in the project root directory, while temporary build files are stored in the system's temporary directory. Git ignores the executable and build caches.
 
 ## Validation
 
-The v1.2.4 build passed 110 automated checks, with no failures; one read-only clipboard probe was skipped because the current clipboard had no owned data to inspect. The language tests verify that a first launch defaults to English and that later language choices persist. The skipped probe does not change the clipboard. Windows loaded all eight embedded icon sizes successfully, and each embedded image matched the source icon. The other checks cover clipboard confirmation and native copy/paste in an isolated test desktop, native windows and rendering, both interface languages, the fixed **language** heading, startup registration and menu commands, and the localized startup message. Startup tests use a temporary registry key that Windows does not execute, and verify registration, quoted paths containing spaces and Chinese characters, persistence, unregistration, and preservation of unrelated values. The notification test creates or updates the current user's Start menu shortcut; the real Windows automatic-start setting and visible desktop clipboard remain unchanged. Windows controls whether the notification appears as a banner or in its notification center.
+The local v1.2.5 build passed 126 automated checks with no failures or skips. These include 13 native keyboard recovery checks: removing the real hook, recovery using the production two-second timer, repeated loss, transient installation failures, pause preservation, shutdown/restart, and a simulated resume message. No keystrokes are injected. The remaining tests cover clipboard confirmation and native copy/read/paste in an isolated test desktop, windows and rendering, both interface languages, persisted language choices, tray tooltips, startup registration, and read-only access to the current clipboard. Startup tests use a unique temporary registry key that Windows does not execute; the actual automatic-start setting and visible desktop clipboard remain unchanged. All eight embedded icon frames match the source ICO and load successfully through Windows.
+
+The failure analysis and baseline reproduction are in `validation/keyboard-failure-analysis.md`. The v1.2.4 startup-notification report is retained as historical evidence and is not counted in the v1.2.5 total. Actual sleep/unlock cycles and a multi-day interactive soak have not been performed.
 
 Reports are in `validation/`. A full Windows sign-out/reboot startup test has not been performed; compatibility with individual third-party applications still depends on their clipboard behavior.
 

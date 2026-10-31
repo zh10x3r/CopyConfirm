@@ -1,0 +1,11 @@
+{
+  "baseline_version": "1.2.4",
+  "listener_started": true,
+  "native_hook_removed": true,
+  "installations_before_loss": 1,
+  "installations_after_2600ms": 1,
+  "recovery_absent_confirmed": true,
+  "clipboard_sequence_unchanged": true,
+  "foreground_unchanged": true,
+  "keystrokes_injected": false
+}

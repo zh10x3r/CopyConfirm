@@ -3,9 +3,9 @@
   "station_error": 0,
   "original_clipboard_sequence_unchanged": true,
   "cases": [
-    {"name": "current_clipboard_has_no_owned_data_to_verify", "passed": false, "detail": 0, "skipped": true}
+    {"name": "current_clipboard_retrieved_in_read_only_helper", "passed": true, "detail": 1, "skipped": false}
   ],
-  "passed": 0,
+  "passed": 1,
   "failed": 0,
-  "skipped": 1
+  "skipped": 0
 }

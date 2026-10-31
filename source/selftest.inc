@@ -156,6 +156,12 @@ int RunSelfTests(const wchar_t* reportPath) {
         keys.Feed(true, false, true, false, false, false, false, true);
         check("synthetic_key_injection_does_not_trigger", !keys.Feed(true, true, true, false, false, false, true, true));
         check("paused_monitor_does_not_trigger", !keys.Feed(true, true, true, false, false, false, false, false));
+        keys.Synchronize(false);
+        check("missed_key_up_recovers_after_state_sync", keys.Feed(true, true, true, false, false, false, false, true));
+        keys.Synchronize(true);
+        check("hook_refresh_does_not_repeat_held_c", !keys.Feed(true, true, true, false, false, false, false, true));
+        keys.Feed(true, false, true, false, false, false, false, true);
+        check("copy_after_refreshed_key_release_is_detected", keys.Feed(true, true, true, false, false, false, false, true));
     }
 
     // Exercise native format handles without changing any clipboard.
@@ -616,6 +622,154 @@ int RunSmokeTest(const wchar_t* reportPath) {
     UnregisterClassW(windowClass.lpszClassName, appInstance);
     paused.store(false);
     WriteReport(reportPath, tests, false, 0, initialSequence == GetClipboardSequenceNumber());
+    return std::any_of(tests.begin(), tests.end(), [](const auto& test) { return !test.passed; }) ? 1 : 0;
+}
+}
+
+namespace {
+// Wrap the real Win32 APIs to remove only this test process's own hooks and
+// simulate transient installation failures. No input is injected or consumed.
+struct HookRecoveryFixture {
+    std::mutex mutex;
+    HHOOK current{};
+    std::vector<HHOOK> active;
+    unsigned installations{}, failures{}, failNext{};
+};
+HookRecoveryFixture* hookRecoveryFixture{};
+
+HHOOK WINAPI RecoveryTestInstall(int type, HOOKPROC callback, HINSTANCE instance, DWORD thread) {
+    auto& fixture = *hookRecoveryFixture;
+    std::lock_guard lock(fixture.mutex);
+    if (fixture.failNext) {
+        --fixture.failNext;
+        ++fixture.failures;
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return nullptr;
+    }
+    const HHOOK hook = SetWindowsHookExW(type, callback, instance, thread);
+    if (hook) {
+        fixture.current = hook;
+        fixture.active.push_back(hook);
+        ++fixture.installations;
+    }
+    return hook;
+}
+
+BOOL WINAPI RecoveryTestRemove(HHOOK hook) {
+    auto& fixture = *hookRecoveryFixture;
+    std::lock_guard lock(fixture.mutex);
+    const BOOL removed = UnhookWindowsHookEx(hook);
+    if (removed) fixture.active.erase(std::remove(fixture.active.begin(), fixture.active.end(), hook), fixture.active.end());
+    if (fixture.current == hook) fixture.current = nullptr;
+    return removed;
+}
+
+int RunKeyboardRecoveryTests(const wchar_t* reportPath) {
+    std::vector<TestCase> tests;
+    auto check = [&](const char* name, bool passed) { tests.push_back({name, passed, 0}); };
+    const DWORD initialSequence = GetClipboardSequenceNumber();
+    const bool wasPaused = paused.exchange(true);
+    HookRecoveryFixture fixture;
+    hookRecoveryFixture = &fixture;
+    auto waitUntil = [](auto predicate, DWORD timeout) {
+        const ULONGLONG started = GetTickCount64();
+        do {
+            if (predicate()) return true;
+            Sleep(5);
+        } while (GetTickCount64() - started < timeout);
+        return predicate();
+    };
+    auto recovered = [&](unsigned previous, DWORD timeout) {
+        return waitUntil([&] {
+            std::lock_guard lock(fixture.mutex);
+            return fixture.installations > previous && fixture.current != nullptr;
+        }, timeout);
+    };
+    auto dropHook = [&](unsigned& previous, unsigned failNext = 0) {
+        std::lock_guard lock(fixture.mutex);
+        previous = fixture.installations;
+        fixture.failNext = failNext;
+        const HHOOK hook = fixture.current;
+        if (!hook || !UnhookWindowsHookEx(hook)) return false;
+        fixture.active.erase(std::remove(fixture.active.begin(), fixture.active.end(), hook), fixture.active.end());
+        fixture.current = nullptr;
+        // KeyboardThread deliberately retains its stale handle and installed
+        // flag, exactly as after Windows silently removes a low-level hook.
+        return true;
+    };
+    auto noHooks = [&] {
+        std::lock_guard lock(fixture.mutex);
+        return fixture.active.empty() && !fixture.current;
+    };
+    {
+        KeyboardThread keyboard(KeyboardRefreshIntervalMs, RecoveryTestInstall, RecoveryTestRemove);
+        const bool started = keyboard.Start();
+        check("native_keyboard_listener_starts", started);
+        if (started) {
+            {
+                std::lock_guard lock(fixture.mutex);
+                fixture.failNext = 1;
+            }
+            const bool requested = keyboard.RequestRefresh();
+            const bool failedOnce = waitUntil([&] {
+                std::lock_guard lock(fixture.mutex);
+                return fixture.failures >= 1;
+            }, 1000);
+            unsigned before{};
+            const bool removed = dropHook(before);
+            check("failed_refresh_preserves_healthy_native_hook", requested && failedOnce && removed && before == 1);
+            check("native_hook_loss_simulated_successfully", removed);
+            check("lost_hook_recovers_using_production_two_second_timer", removed && recovered(before, 4000));
+            unsigned second{};
+            const bool removedAgain = dropHook(second);
+            check("explicit_refresh_reinstalls_actual_native_hook", removedAgain && keyboard.RequestRefresh() && recovered(second, 1000));
+        }
+        keyboard.Stop();
+        check("stopping_listener_removes_native_hooks", noHooks());
+        const bool restarted = keyboard.Start();
+        check("stopped_listener_can_be_restarted", restarted);
+        keyboard.Stop();
+    }
+    {
+        KeyboardThread keyboard(40, RecoveryTestInstall, RecoveryTestRemove);
+        const bool started = keyboard.Start();
+        check("accelerated_native_recovery_fixture_starts", started);
+        if (started) {
+            unsigned failuresBefore{};
+            {
+                std::lock_guard lock(fixture.mutex);
+                failuresBefore = fixture.failures;
+            }
+            unsigned before{};
+            const bool removed = dropHook(before, 2);
+            const bool retried = removed && recovered(before, 2000);
+            {
+                std::lock_guard lock(fixture.mutex);
+                check("transient_install_failures_are_retried_without_restart", retried && fixture.failures >= failuresBefore + 2);
+            }
+            bool repeated = true;
+            for (unsigned i = 0; i < 8; ++i) {
+                unsigned previous{};
+                repeated = dropHook(previous) && recovered(previous, 1000) && repeated;
+            }
+            check("eight_consecutive_native_hook_losses_recover", repeated);
+            check("recovery_preserves_paused_notification_setting", paused.load());
+            unsigned previous{};
+            const bool droppedForResume = dropHook(previous);
+            const auto attemptBefore = latestAttempt.load();
+            App app(L"");
+            app.AttachKeyboard(&keyboard);
+            app.Message(WM_POWERBROADCAST, PBT_APMRESUMEAUTOMATIC, 0);
+            check("resume_message_refreshes_listener_and_invalidates_old_copy", droppedForResume &&
+                recovered(previous, 1000) && latestAttempt.load() > attemptBefore);
+        }
+        keyboard.Stop();
+    }
+    check("all_native_test_hooks_are_removed", noHooks());
+    hookRecoveryFixture = nullptr;
+    paused.store(wasPaused);
+    WriteReport(reportPath, tests, false, 0, initialSequence == GetClipboardSequenceNumber(),
+        "native_hook_recovery_no_clipboard_writes_or_injected_keys");
     return std::any_of(tests.begin(), tests.end(), [](const auto& test) { return !test.passed; }) ? 1 : 0;
 }
 }

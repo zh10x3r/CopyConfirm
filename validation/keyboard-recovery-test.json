@@ -1,0 +1,23 @@
+{
+  "clipboard_scope": "native_hook_recovery_no_clipboard_writes_or_injected_keys",
+  "station_error": 0,
+  "original_clipboard_sequence_unchanged": true,
+  "cases": [
+    {"name": "native_keyboard_listener_starts", "passed": true, "detail": 0, "skipped": false},
+    {"name": "failed_refresh_preserves_healthy_native_hook", "passed": true, "detail": 0, "skipped": false},
+    {"name": "native_hook_loss_simulated_successfully", "passed": true, "detail": 0, "skipped": false},
+    {"name": "lost_hook_recovers_using_production_two_second_timer", "passed": true, "detail": 0, "skipped": false},
+    {"name": "explicit_refresh_reinstalls_actual_native_hook", "passed": true, "detail": 0, "skipped": false},
+    {"name": "stopping_listener_removes_native_hooks", "passed": true, "detail": 0, "skipped": false},
+    {"name": "stopped_listener_can_be_restarted", "passed": true, "detail": 0, "skipped": false},
+    {"name": "accelerated_native_recovery_fixture_starts", "passed": true, "detail": 0, "skipped": false},
+    {"name": "transient_install_failures_are_retried_without_restart", "passed": true, "detail": 0, "skipped": false},
+    {"name": "eight_consecutive_native_hook_losses_recover", "passed": true, "detail": 0, "skipped": false},
+    {"name": "recovery_preserves_paused_notification_setting", "passed": true, "detail": 0, "skipped": false},
+    {"name": "resume_message_refreshes_listener_and_invalidates_old_copy", "passed": true, "detail": 0, "skipped": false},
+    {"name": "all_native_test_hooks_are_removed", "passed": true, "detail": 0, "skipped": false}
+  ],
+  "passed": 13,
+  "failed": 0,
+  "skipped": 0
+}
