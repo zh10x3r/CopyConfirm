@@ -28,7 +28,7 @@ try {
         'CopyConfirm.cpp' (Join-Path $taskBuildPath 'CopyConfirm.res') `
         ('/Fo' + (Join-Path $taskBuildPath 'CopyConfirm.obj')) ('/Fe' + $taskOutput) `
         '/link' '/SUBSYSTEM:WINDOWS' '/INCREMENTAL:NO' 'user32.lib' 'gdi32.lib' 'shell32.lib' `
-        'gdiplus.lib' 'ole32.lib' 'runtimeobject.lib' 'uuid.lib' 'advapi32.lib'
+        'gdiplus.lib' 'ole32.lib' 'runtimeobject.lib' 'uuid.lib' 'advapi32.lib' 'comctl32.lib'
     if ($LASTEXITCODE -ne 0) { throw 'C++ compilation failed.' }
     Get-Item -LiteralPath $taskOutput | Select-Object FullName,Length
 } finally {

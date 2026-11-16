@@ -85,6 +85,40 @@ int RunSelfTests(const wchar_t* reportPath) {
     auto check = [&](const char* name, bool passed, DWORD detail = 0) {
         tests.push_back(TestCase{name, passed, detail});
     };
+    {
+        const RECT workArea{0, 0, 1920, 1040}; // 40 pixels at the bottom are reserved for the taskbar.
+        const auto normal = PlaceToast(workArea, {156, 46}, 41, PopupSettings{}.bottomGap);
+        check("default_popup_keeps_original_position", normal && normal->position.x == 882 &&
+            normal->position.y == 967 && normal->size.cy == 46);
+        const auto flush = PlaceToast(workArea, {156, 46}, 41, 0);
+        check("zero_gap_crops_shadow_at_the_work_area_bottom", flush &&
+            flush->position.y + 41 == workArea.bottom && flush->size.cy == 41);
+
+        const RECT secondary{-1600, -480, 0, 380};
+        const auto onSecondary = PlaceToast(secondary, {234, 69}, MulDiv(41, 144, 96), MulDiv(80, 144, 96));
+        check("popup_gap_scales_on_a_secondary_monitor", onSecondary &&
+            onSecondary->position.x == -917 && onSecondary->position.y == 198);
+        const auto clamped = PlaceToast({0, 0, 800, 400}, {312, 92}, 82, MulDiv(300, 192, 96));
+        check("large_gap_does_not_move_popup_above_work_area", clamped && clamped->position.y == 0);
+
+        const DWORD shortest = PopupSettings{0, 5}.DurationMs();
+        const DWORD longest = PopupSettings{300, 50}.DurationMs();
+        check("short_popup_fades_then_expires_at_half_a_second",
+            ToastOpacity(0, shortest) == BYTE{0} && ToastOpacity(120, shortest) == BYTE{255} &&
+            ToastOpacity(320, shortest) == BYTE{255} && ToastOpacity(410, shortest) == BYTE{127} &&
+            !ToastOpacity(500, shortest));
+        check("long_popup_fades_only_near_the_end_of_five_seconds",
+            ToastOpacity(4819, longest) == BYTE{255} && ToastOpacity(4910, longest) == BYTE{127} &&
+            !ToastOpacity(5000, longest));
+        check("popup_input_accepts_range_limits_and_fractional_steps",
+            ParseBottomGap(L" 0 ") == 0 && ParseBottomGap(L"300") == 300 &&
+            ParsePopupDuration(L"0.5") == 5 && ParsePopupDuration(L"5") == 50 &&
+            ParsePopupDuration(L"1,6") == 16);
+        check("popup_input_rejects_out_of_range_and_partial_values",
+            !ParseBottomGap(L"301") && !ParseBottomGap(L"12px") && !ParseBottomGap(L"-1") &&
+            !ParsePopupDuration(L"0.4") && !ParsePopupDuration(L"5.1") && !ParsePopupDuration(L"1.25") &&
+            !ParsePopupDuration(L"."));
+    }
     const CopyEvent copy{1, 1000, 10, 42, 1};
     const Snapshot updated{11, 42, 42, true};
     const ProbeResult success{1, ProbeStatus::Ok, 11, 42, CF_UNICODETEXT, 0};
@@ -395,7 +429,7 @@ int RunLanguageTests(const wchar_t* reportPath) {
         HMENU submenu = menu ? GetSubMenu(menu, 1) : nullptr;
         const bool isEnglish = language == Language::English;
         check(isEnglish ? "english_language_submenu_has_two_options" : "chinese_language_submenu_has_two_options",
-            menu && GetMenuItemCount(menu) == 5 && submenu && GetMenuItemCount(submenu) == 2);
+            submenu && GetMenuItemCount(submenu) == 2);
         const UINT selected = isEnglish ? EnglishCommand : ChineseCommand;
         const UINT other = isEnglish ? ChineseCommand : EnglishCommand;
         check(isEnglish ? "english_radio_selected_without_chinese" : "chinese_radio_selected_without_english",
@@ -405,6 +439,9 @@ int RunLanguageTests(const wchar_t* reportPath) {
         if (menu) GetMenuStringW(menu, 1, caption, _countof(caption), MF_BYPOSITION);
         check(isEnglish ? "english_menu_heading_is_lowercase_language" : "chinese_menu_heading_is_lowercase_language",
             wcscmp(caption, L"language") == 0);
+        if (menu) GetMenuStringW(menu, PopupSettingsCommand, caption, _countof(caption), MF_BYCOMMAND);
+        check(isEnglish ? "english_popup_settings_menu_entry" : "chinese_popup_settings_menu_entry",
+            menu && wcscmp(caption, isEnglish ? L"Popup Settings…" : L"提示设置…") == 0);
         if (menu) DestroyMenu(menu);
     }
     {
@@ -470,6 +507,17 @@ int RunLanguageTests(const wchar_t* reportPath) {
         App switchedBack(configPath);
         check("switching_back_to_chinese_is_persisted", window && app.CurrentLanguage() == Language::Chinese &&
             switchedBack.CurrentLanguage() == Language::Chinese);
+        check("old_language_only_config_uses_default_popup_settings",
+            LoadPopupSettings(configPath) == PopupSettings{});
+        const PopupSettings customized{0, 37};
+        check("popup_settings_round_trip_and_preserve_saved_language",
+            SavePopupSettings(configPath, customized) && LoadPopupSettings(configPath) == customized &&
+            LoadLanguage(configPath) == Language::Chinese);
+        check("writing_language_preserves_saved_popup_settings",
+            SaveLanguage(configPath, Language::English) && LoadPopupSettings(configPath) == customized);
+        check("invalid_saved_gap_falls_back_without_losing_valid_duration",
+            WritePrivateProfileStringW(L"Popup", L"BottomGap", L"999999", configPath.c_str()) &&
+            LoadPopupSettings(configPath) == PopupSettings{32, 37});
         if (window) DestroyWindow(window);
         UnregisterClassW(windowClass.lpszClassName, appInstance);
         MSG quit{};

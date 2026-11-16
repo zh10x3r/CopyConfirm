@@ -29,6 +29,7 @@
 #include <vector>
 #include "detector.hpp"
 #include "localization.hpp"
+#include "popup_dialog.hpp"
 #include "windows_notification.hpp"
 
 using namespace copyconfirm;
@@ -45,6 +46,7 @@ constexpr UINT ToastTimer = 2;
 constexpr UINT PauseCommand = 101;
 constexpr UINT ExitCommand = 102;
 constexpr UINT AutoStartCommand = 103;
+constexpr UINT PopupSettingsCommand = 104;
 constexpr UINT ChineseCommand = 201;
 constexpr UINT EnglishCommand = 202;
 constexpr DWORD ProbeTimeoutMs = 1250;
@@ -81,7 +83,7 @@ std::wstring ExecutablePath() {
     return count && count < buffer.size() ? std::wstring(buffer.data(), count) : L"";
 }
 
-std::wstring LanguageConfigPath() {
+std::wstring SettingsConfigPath() {
     const std::wstring path = ExecutablePath();
     const size_t slash = path.find_last_of(L"\\/");
     return slash == std::wstring::npos ? L"" : path.substr(0, slash + 1) + L"CopyConfirm.ini";
@@ -157,7 +159,8 @@ HMENU BuildTrayMenu(Language language, bool isPaused, StartupState startup = {})
     }
     const UINT startupFlags = MF_STRING | (startup.enabled ? MF_CHECKED : MF_UNCHECKED) |
         (startup.error == ERROR_SUCCESS ? MF_ENABLED : MF_GRAYED);
-    if (!AppendMenuW(menu, startupFlags, AutoStartCommand, text.autoStart) ||
+    if (!AppendMenuW(menu, MF_STRING, PopupSettingsCommand, PopupText(language).menu) ||
+        !AppendMenuW(menu, startupFlags, AutoStartCommand, text.autoStart) ||
         !AppendMenuW(menu, MF_SEPARATOR, 0, nullptr) ||
         !AppendMenuW(menu, MF_STRING, ExitCommand, text.exit)) {
         DestroyMenu(menu); return nullptr;
@@ -526,6 +529,9 @@ private:
 
 class ToastSurface {
 public:
+    static constexpr int PanelTop = 3;
+    static constexpr int PanelHeight = 38;
+
     ~ToastSurface() { Reset(); }
     void Reset() {
         if (dc_) {
@@ -579,7 +585,7 @@ public:
             graphics.FillPath(&shade, &shadow);
         }
         Gdiplus::GraphicsPath panel;
-        rounded(panel, 4, 3, 148, 38, 8);
+        rounded(panel, 4, PanelTop, 148, PanelHeight, 8);
         Gdiplus::SolidBrush paper(Gdiplus::Color(250, 253, 253, 253));
         Gdiplus::Pen border(Gdiplus::Color(80, 210, 210, 210), 0.7f);
         graphics.FillPath(&paper, &panel);
@@ -591,7 +597,7 @@ public:
         format.SetLineAlignment(Gdiplus::StringAlignmentCenter);
         format.SetAlignment(Gdiplus::StringAlignmentCenter);
         format.SetFormatFlags(Gdiplus::StringFormatFlagsNoWrap);
-        const Gdiplus::RectF textBounds(8, 3, 140, 38);
+        const Gdiplus::RectF textBounds(8, PanelTop, 140, PanelHeight);
         Gdiplus::RectF measured;
         const Gdiplus::PointF origin(0, 0);
         const bool measuredOk = graphics.MeasureString(text.copied, -1, &font, origin, &format, &measured) == Gdiplus::Ok;
@@ -615,11 +621,36 @@ private:
     bool textFits_{};
 };
 
+struct ToastPlacement {
+    POINT position;
+    SIZE size;
+};
+
+std::optional<ToastPlacement> PlaceToast(const RECT& workArea, SIZE canvas, LONG panelBottom, LONG bottomGap) {
+    const LONG workWidth = workArea.right - workArea.left;
+    if (workWidth <= 0 || workArea.bottom <= workArea.top) return {};
+    const LONG x = workArea.left + std::max(0L, (workWidth - canvas.cx) / 2);
+    const LONG y = std::max(workArea.top, workArea.bottom - panelBottom - bottomGap);
+    // Crop the canvas at the work-area boundary, including the shadow when the gap is zero.
+    return ToastPlacement{{x, y}, {std::min(canvas.cx, workArea.right - x),
+        std::min(canvas.cy, workArea.bottom - y)}};
+}
+
+std::optional<BYTE> ToastOpacity(ULONGLONG age, DWORD durationMs) {
+    constexpr ULONGLONG fadeInMs = 120;
+    constexpr ULONGLONG fadeOutMs = 180;
+    if (age >= durationMs) return {};
+    if (age < fadeInMs) return static_cast<BYTE>(age * 255 / fadeInMs);
+    const auto remaining = durationMs - age;
+    if (remaining < fadeOutMs) return static_cast<BYTE>(remaining * 255 / fadeOutMs);
+    return BYTE{255};
+}
+
 class App {
 public:
-    explicit App(std::wstring settingsPath = LanguageConfigPath(), std::wstring startupKey = StartupRunKey)
+    explicit App(std::wstring settingsPath = SettingsConfigPath(), std::wstring startupKey = StartupRunKey)
         : settingsPath_(std::move(settingsPath)), language_(LoadLanguage(settingsPath_)),
-          startupKey_(std::move(startupKey)) {}
+          popupSettings_(LoadPopupSettings(settingsPath_)), startupKey_(std::move(startupKey)) {}
     Language CurrentLanguage() const { return language_; }
     void ShowStartupNotification() const {
         windows_notification::ShowStartupNotification(Text(language_).startupNotice);
@@ -677,7 +708,7 @@ public:
             return 0;
         }
         case WM_CLIPBOARDUPDATE:
-            if (visible_ && GetClipboardSequenceNumber() != confirmedSequence_) HideToast();
+            if (visible_ && ToastClipboardChanged()) HideToast();
             Observe();
             return 0;
         case ProbeMessage: {
@@ -686,7 +717,7 @@ public:
             const CopyEvent copy = *gate_.Attempt();
             if (gate_.Complete(GetTickCount64(), *result, CurrentSnapshot(copy))) {
                 KillTimer(window_, PollTimer);
-                ShowToast(reinterpret_cast<HWND>(copy.sourceWindow), result->sequence);
+                ShowToast(reinterpret_cast<HWND>(copy.sourceWindow), popupSettings_, result->sequence);
             } else Observe();
             return 0;
         }
@@ -695,10 +726,14 @@ public:
             if (wParam == ToastTimer) AnimateToast();
             return 0;
         case TrayMessage:
-            if (LOWORD(lParam) == WM_CONTEXTMENU || LOWORD(lParam) == WM_RBUTTONUP)
+            if (!editingPopupSettings_ && (LOWORD(lParam) == WM_CONTEXTMENU || LOWORD(lParam) == WM_RBUTTONUP))
                 TrayMenu();
             return 0;
         case WM_COMMAND:
+            if (LOWORD(wParam) == PopupSettingsCommand) {
+                OpenPopupSettings();
+                return 0;
+            }
             if (LOWORD(wParam) == ExitCommand) DestroyWindow(window_);
             if (LOWORD(wParam) == AutoStartCommand) {
                 const auto state = CurrentStartup();
@@ -786,39 +821,67 @@ private:
         if (command) PostMessageW(window_, WM_COMMAND, command, 0);
         PostMessageW(window_, WM_NULL, 0, 0);
     }
-    void ShowToast(HWND source, DWORD sequence) {
-        const UINT dpi = GetDpiForWindow(source);
-        if (!surface_.Render(dpi, language_)) return;
+    void OpenPopupSettings() {
+        if (editingPopupSettings_) return;
+        editingPopupSettings_ = true;
+        PopupSettingsDialog dialog(language_, popupSettings_, settingsPath_,
+            [this](HWND previewWindow, PopupSettings draft) { return ShowToast(previewWindow, draft); });
+        const INT_PTR result = dialog.Show(appInstance, window_);
+        editingPopupSettings_ = false;
+        if (visible_ && !confirmedSequence_) HideToast();
+        if (result == IDOK) {
+            popupSettings_ = dialog.Settings();
+        } else if (result == -1) {
+            const auto& text = PopupText(language_);
+            MessageBoxW(window_, text.openError, text.title, MB_OK | MB_ICONERROR);
+        }
+    }
+    bool ShowToast(HWND source, PopupSettings settings, std::optional<DWORD> sequence = std::nullopt) {
+        HideToast();
+        if (!toast_) return false;
         MONITORINFO monitor{sizeof(monitor)};
-        if (!GetMonitorInfoW(MonitorFromWindow(source, MONITOR_DEFAULTTONEAREST), &monitor)) return;
-        position_.x = monitor.rcWork.left + (monitor.rcWork.right - monitor.rcWork.left - surface_.width) / 2;
-        // Match the HP Caps Lock panel's visible bottom edge in the reference layout.
-        position_.y = monitor.rcWork.bottom - surface_.height - MulDiv(27, dpi ? dpi : 96, 96);
+        if (!GetMonitorInfoW(MonitorFromWindow(source, MONITOR_DEFAULTTONEAREST), &monitor)) return false;
+        const RECT& work = monitor.rcWork;
+        // Get the monitor's actual DPI even if the application that copied is DPI-unaware.
+        const LONG centerX = work.left + (work.right - work.left) / 2;
+        const LONG centerY = work.top + (work.bottom - work.top) / 2;
+        if (!SetWindowPos(toast_, nullptr, centerX, centerY, 1, 1, SWP_NOZORDER | SWP_NOACTIVATE)) return false;
+        const UINT monitorDpi = GetDpiForWindow(toast_);
+        const int dpi = static_cast<int>(monitorDpi ? monitorDpi : USER_DEFAULT_SCREEN_DPI);
+        if (!surface_.Render(static_cast<UINT>(dpi), language_)) return false;
+        const auto placement = PlaceToast(work, {surface_.width, surface_.height},
+            MulDiv(ToastSurface::PanelTop + ToastSurface::PanelHeight, dpi, USER_DEFAULT_SCREEN_DPI),
+            MulDiv(settings.bottomGap, dpi, USER_DEFAULT_SCREEN_DPI));
+        if (!placement) return false;
+        placement_ = *placement;
+        if (!PaintToast(0) || !SetTimer(window_, ToastTimer, 16, nullptr)) return false;
+
+        // An empty sequence marks a preview, which is independent of clipboard changes.
         confirmedSequence_ = sequence;
+        toastDurationMs_ = settings.DurationMs();
         toastStarted_ = GetTickCount64();
         visible_ = true;
-        PaintToast(0);
         ShowWindow(toast_, SW_SHOWNOACTIVATE);
-        SetTimer(window_, ToastTimer, 16, nullptr);
+        return true;
     }
-    void PaintToast(BYTE opacity) {
+    bool PaintToast(BYTE opacity) {
         POINT origin{};
-        SIZE size{surface_.width, surface_.height};
         BLENDFUNCTION blend{AC_SRC_OVER, 0, opacity, AC_SRC_ALPHA};
-        UpdateLayeredWindow(toast_, nullptr, &position_, &size, surface_.Dc(), &origin,
-                            0, &blend, ULW_ALPHA);
+        return UpdateLayeredWindow(toast_, nullptr, &placement_.position, &placement_.size,
+            surface_.Dc(), &origin, 0, &blend, ULW_ALPHA) != FALSE;
+    }
+    bool ToastClipboardChanged() const {
+        return confirmedSequence_ && GetClipboardSequenceNumber() != *confirmedSequence_;
     }
     void AnimateToast() {
         if (!visible_) return;
-        const ULONGLONG age = GetTickCount64() - toastStarted_;
-        if (age >= 1300 || GetClipboardSequenceNumber() != confirmedSequence_) { HideToast(); return; }
-        const float alpha = age < 120 ? static_cast<float>(age) / 120.0f :
-            age > 1120 ? static_cast<float>(1300 - age) / 180.0f : 1.0f;
-        PaintToast(static_cast<BYTE>(std::clamp(alpha, 0.0f, 1.0f) * 255));
+        const auto opacity = ToastOpacity(GetTickCount64() - toastStarted_, toastDurationMs_);
+        if (!opacity || ToastClipboardChanged() || !PaintToast(*opacity)) HideToast();
     }
     void HideToast() {
         if (toast_) ShowWindow(toast_, SW_HIDE);
         visible_ = false;
+        confirmedSequence_.reset();
         if (window_) KillTimer(window_, ToastTimer);
     }
     HWND window_{}, toast_{};
@@ -827,12 +890,15 @@ private:
     std::unique_ptr<ProbeWorker> worker_;
     KeyboardThread* keyboard_{};
     ToastSurface surface_;
-    POINT position_{};
+    ToastPlacement placement_{};
     ULONGLONG toastStarted_{};
-    DWORD confirmedSequence_{};
+    DWORD toastDurationMs_{};
+    std::optional<DWORD> confirmedSequence_;
     bool visible_{}, listening_{};
+    bool editingPopupSettings_{};
     std::wstring settingsPath_;
     Language language_{Language::Chinese};
+    PopupSettings popupSettings_;
     std::wstring startupKey_;
 };
 
@@ -868,7 +934,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         return ProbeEntry(reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(std::wcstoull(args[2].c_str(), nullptr, 10))));
     if (args.size() == 2 && args[1] == L"--notification-test")
         return SUCCEEDED(windows_notification::ShowStartupNotification(
-            Text(LoadLanguage(LanguageConfigPath())).startupNotice)) ? 0 : 4;
+            Text(LoadLanguage(SettingsConfigPath())).startupNotice)) ? 0 : 4;
     if (args.size() == 3 && args[1] == L"--self-test") return RunSelfTests(args[2].c_str());
     if (args.size() == 3 && args[1] == L"--read-only-probe-test") return RunReadOnlyProbeTest(args[2].c_str());
     if (args.size() == 3 && args[1] == L"--keyboard-recovery-test") return RunKeyboardRecoveryTests(args[2].c_str());
@@ -916,7 +982,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         KeyboardThread keyboard;
         app.AttachKeyboard(&keyboard);
         if (!mainWindow || !app.Initialize(mainWindow) || !keyboard.Start()) {
-            const auto& text = Text(LoadLanguage(LanguageConfigPath()));
+            const auto& text = Text(LoadLanguage(SettingsConfigPath()));
             MessageBoxW(nullptr, text.startupError, AppName, MB_OK | MB_ICONERROR);
             if (mainWindow && IsWindow(mainWindow)) DestroyWindow(mainWindow);
             exitCode = 1;

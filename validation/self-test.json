@@ -1,8 +1,16 @@
 {
-  "clipboard_scope": "isolated_noninteractive_window_station",
-  "station_error": 0,
+  "clipboard_scope": "no_clipboard_writes",
+  "station_error": 5,
   "original_clipboard_sequence_unchanged": true,
   "cases": [
+    {"name": "default_popup_keeps_original_position", "passed": true, "detail": 0, "skipped": false},
+    {"name": "zero_gap_crops_shadow_at_the_work_area_bottom", "passed": true, "detail": 0, "skipped": false},
+    {"name": "popup_gap_scales_on_a_secondary_monitor", "passed": true, "detail": 0, "skipped": false},
+    {"name": "large_gap_does_not_move_popup_above_work_area", "passed": true, "detail": 0, "skipped": false},
+    {"name": "short_popup_fades_then_expires_at_half_a_second", "passed": true, "detail": 0, "skipped": false},
+    {"name": "long_popup_fades_only_near_the_end_of_five_seconds", "passed": true, "detail": 0, "skipped": false},
+    {"name": "popup_input_accepts_range_limits_and_fractional_steps", "passed": true, "detail": 0, "skipped": false},
+    {"name": "popup_input_rejects_out_of_range_and_partial_values", "passed": true, "detail": 0, "skipped": false},
     {"name": "clipboard_change_without_ctrl_c_is_silent", "passed": true, "detail": 0, "skipped": false},
     {"name": "ctrl_c_with_unchanged_clipboard_is_silent", "passed": true, "detail": 0, "skipped": false},
     {"name": "new_content_waits_for_clipboard_settle", "passed": true, "detail": 0, "skipped": false},
@@ -40,24 +48,9 @@
     {"name": "native_file_list_data_is_readable", "passed": true, "detail": 0, "skipped": false},
     {"name": "helper_timeout_is_bounded_without_clipboard_writes", "passed": true, "detail": 0, "skipped": false},
     {"name": "helper_cancellation_is_prompt_without_clipboard_writes", "passed": true, "detail": 0, "skipped": false},
-    {"name": "clipboard_tests_are_isolated_from_visible_desktop", "passed": true, "detail": 0, "skipped": false},
-    {"name": "test_desktop_is_not_visible", "passed": true, "detail": 0, "skipped": false},
-    {"name": "hidden_test_edit_controls_created", "passed": true, "detail": 0, "skipped": false},
-    {"name": "test_clipboard_seeded_inside_isolated_station", "passed": true, "detail": 0, "skipped": false},
-    {"name": "actual_edit_copy_is_retrievable_from_helper", "passed": true, "detail": 0, "skipped": false},
-    {"name": "actual_edit_paste_matches_copied_test_text", "passed": true, "detail": 31, "skipped": false},
-    {"name": "copying_identical_text_again_still_confirms", "passed": true, "detail": 0, "skipped": false},
-    {"name": "helper_rejects_different_source_process", "passed": true, "detail": 0, "skipped": false},
-    {"name": "helper_rejects_empty_clipboard", "passed": true, "detail": 0, "skipped": false},
-    {"name": "delayed_text_is_rendered_before_confirmation", "passed": true, "detail": 0, "skipped": false},
-    {"name": "failed_delayed_renderer_never_confirms", "passed": true, "detail": 0, "skipped": false},
-    {"name": "unknown_private_format_is_safely_skipped", "passed": true, "detail": 0, "skipped": false},
-    {"name": "bitmap_clipboard_data_is_supported", "passed": true, "detail": 0, "skipped": false},
-    {"name": "file_list_clipboard_data_is_supported", "passed": true, "detail": 0, "skipped": false},
-    {"name": "slow_helper_is_terminated_at_timeout", "passed": true, "detail": 0, "skipped": false},
-    {"name": "superseded_helper_is_canceled_promptly", "passed": true, "detail": 0, "skipped": false}
+    {"name": "isolated_clipboard_integration_tests_unavailable", "passed": false, "detail": 5, "skipped": true}
   ],
-  "passed": 53,
+  "passed": 45,
   "failed": 0,
-  "skipped": 0
+  "skipped": 1
 }

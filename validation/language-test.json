@@ -9,9 +9,11 @@
     {"name": "chinese_language_submenu_has_two_options", "passed": true, "detail": 0, "skipped": false},
     {"name": "chinese_radio_selected_without_english", "passed": true, "detail": 0, "skipped": false},
     {"name": "chinese_menu_heading_is_lowercase_language", "passed": true, "detail": 0, "skipped": false},
+    {"name": "chinese_popup_settings_menu_entry", "passed": true, "detail": 0, "skipped": false},
     {"name": "english_language_submenu_has_two_options", "passed": true, "detail": 0, "skipped": false},
     {"name": "english_radio_selected_without_chinese", "passed": true, "detail": 0, "skipped": false},
     {"name": "english_menu_heading_is_lowercase_language", "passed": true, "detail": 0, "skipped": false},
+    {"name": "english_popup_settings_menu_entry", "passed": true, "detail": 0, "skipped": false},
     {"name": "paused_english_menu_offers_resume", "passed": true, "detail": 0, "skipped": false},
     {"name": "chinese_bold_caption_fits_at_96dpi", "passed": true, "detail": 0, "skipped": false},
     {"name": "english_bold_caption_fits_at_96dpi", "passed": true, "detail": 0, "skipped": false},
@@ -33,9 +35,13 @@
     {"name": "pause_command_updates_english_tooltip", "passed": true, "detail": 0, "skipped": false},
     {"name": "language_switch_preserves_paused_tooltip_state", "passed": true, "detail": 0, "skipped": false},
     {"name": "resume_command_updates_chinese_tooltip", "passed": true, "detail": 0, "skipped": false},
-    {"name": "switching_back_to_chinese_is_persisted", "passed": true, "detail": 0, "skipped": false}
+    {"name": "switching_back_to_chinese_is_persisted", "passed": true, "detail": 0, "skipped": false},
+    {"name": "old_language_only_config_uses_default_popup_settings", "passed": true, "detail": 0, "skipped": false},
+    {"name": "popup_settings_round_trip_and_preserve_saved_language", "passed": true, "detail": 0, "skipped": false},
+    {"name": "writing_language_preserves_saved_popup_settings", "passed": true, "detail": 0, "skipped": false},
+    {"name": "invalid_saved_gap_falls_back_without_losing_valid_duration", "passed": true, "detail": 0, "skipped": false}
   ],
-  "passed": 31,
+  "passed": 37,
   "failed": 0,
   "skipped": 0
 }

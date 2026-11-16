@@ -16,10 +16,11 @@ English:
 
 1. Double-click `CopyConfirm.exe`. A fresh installation starts in English; the language you choose is saved for future launches. After the program starts successfully, Windows displays a system notification in the selected language: **软件已经开始运行** in Chinese or **CopyConfirm is now running** in English. You can then find the CopyConfirm icon in the system tray at the bottom-right corner of the taskbar. On some computers, you may need to expand the hidden icons.
 2. Select some content and press **Ctrl+C** as usual.
-3. Once the program confirms that the clipboard has been updated and the new data is readable, it briefly displays **Copied to clipboard** near the bottom of the screen containing the active application. The notification disappears after approximately 1.3 seconds.
+3. Once the program confirms that the clipboard has been updated and the new data is readable, it briefly displays **Copied to clipboard** near the bottom of the screen containing the active application. The popup lasts 1.3 seconds by default, including its fade.
 4. Right-click the system tray icon to pause or resume notifications, or exit the program.
 5. Right-click → **language → 中文** to switch to Chinese, or choose **English** to switch back. The notification, context menu, and tray tooltip follow the saved language choice. The submenu heading always reads **language**, in either interface language.
 6. Check **Start with Windows** (**开机自启动** in Chinese) to run the program automatically when you sign in to Windows. Click it again to disable this. The option is off by default and applies to the current user.
+7. Open **Popup Settings…** (**提示设置…** in Chinese) from the tray menu to adjust **Bottom Gap** (0–300 pixels at 100% scaling, default 32) and **Popup Duration** (0.5–5.0 seconds, default 1.3). The gap is measured from the white panel to the bottom of the display's work area. With a bottom taskbar, 0 aligns the panel with the top of the taskbar. Use **Preview** to try the draft and **OK** to save it. **Restore Defaults** fills in the original values.
 
 Hover over the tray icon to see the current notification state in the selected language. English tooltips read **CopyConfirm · Running** or **CopyConfirm · Not running**; "Not running" means notifications are paused. The tooltip updates after changing the language or pausing/resuming notifications.
 
@@ -58,11 +59,12 @@ During normal operation, the program only reads the clipboard to verify data ava
 
 The verification subprocess returns only status information and clipboard format identifiers through memory. It does not return the copied content.
 
-`CopyConfirm.ini` stores only the language preference and contains no clipboard data. It is excluded from Git tracking through `.gitignore`.
+`CopyConfirm.ini` sits next to the executable and stores the language and popup preferences. Existing language settings are used on upgrade, and missing popup settings use the defaults. The file contains no clipboard data and is excluded from Git tracking through `.gitignore`.
 
 ## Source Code and Building
 
 - `source/CopyConfirm.cpp` implements the Windows interface, keyboard monitoring, clipboard verification, and notification rendering.
+- `source/popup_dialog.hpp` and `source/popup_settings.hpp` implement the native settings dialog and its saved preferences.
 - `source/windows_notification.hpp` sends the localized Windows startup notification and maintains its per-user Start menu registration.
 - `source/detector.hpp` implements the confirmation state machine.
 - `source/localization.hpp` defines the Chinese and English interface strings and fonts.
@@ -82,9 +84,9 @@ The generated executable is placed in the project root directory, while temporar
 
 ## Validation
 
-The local v1.2.5 build passed 126 automated checks with no failures or skips. These include 13 native keyboard recovery checks: removing the real hook, recovery using the production two-second timer, repeated loss, transient installation failures, pause preservation, shutdown/restart, and a simulated resume message. No keystrokes are injected. The remaining tests cover clipboard confirmation and native copy/read/paste in an isolated test desktop, windows and rendering, both interface languages, persisted language choices, tray tooltips, startup registration, and read-only access to the current clipboard. Startup tests use a unique temporary registry key that Windows does not execute; the actual automatic-start setting and visible desktop clipboard remain unchanged. All eight embedded icon frames match the source ICO and load successfully through Windows.
+The local v1.2.6 build passed 134 checks, including native dialog tests for both languages, preview timing, save and cancel, restoring defaults, and loading existing preferences. Placement was tested with simulated work areas and display scaling, and the live preview was exercised in a hidden layered window on one display. The current environment blocked the isolated clipboard, temporary startup registry, and read-only clipboard helper tests. The same access restrictions were reproduced with v1.2.5.
 
-The failure analysis and baseline reproduction are in `validation/keyboard-failure-analysis.md`. The v1.2.4 startup-notification report is retained as historical evidence and is not counted in the v1.2.5 total. Actual sleep/unlock cycles and a multi-day interactive soak have not been performed.
+The v1.2.5 keyboard listener investigation is in `validation/keyboard-failure-analysis.md`. The v1.2.4 startup notification report and the previous successful startup and read-only clipboard tests are retained as historical evidence. Actual sleep/unlock cycles and a multi-day interactive soak have not been performed.
 
 Reports are in `validation/`. A full Windows sign-out/reboot startup test has not been performed; compatibility with individual third-party applications still depends on their clipboard behavior.
 
