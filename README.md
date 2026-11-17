@@ -82,14 +82,6 @@ The script first looks for MSYS2 UCRT64 at `C:\msys64\ucrt64\bin\` (or the locat
 
 The generated executable is placed in the project root directory, while temporary build files are stored in the system's temporary directory. Git ignores the executable and build caches.
 
-## Validation
-
-The local v1.2.6 build passed 134 checks, including native dialog tests for both languages, preview timing, save and cancel, restoring defaults, and loading existing preferences. Placement was tested with simulated work areas and display scaling, and the live preview was exercised in a hidden layered window on one display. The current environment blocked the isolated clipboard, temporary startup registry, and read-only clipboard helper tests. The same access restrictions were reproduced with v1.2.5.
-
-The v1.2.5 keyboard listener investigation is in `validation/keyboard-failure-analysis.md`. The v1.2.4 startup notification report and the previous successful startup and read-only clipboard tests are retained as historical evidence. Actual sleep/unlock cycles and a multi-day interactive soak have not been performed.
-
-Reports are in `validation/`. A full Windows sign-out/reboot startup test has not been performed; compatibility with individual third-party applications still depends on their clipboard behavior.
-
 ## Implementation References
 
 - [Using the Windows Clipboard](https://learn.microsoft.com/en-us/windows/win32/dataxchg/using-the-clipboard)
